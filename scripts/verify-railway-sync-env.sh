@@ -35,6 +35,20 @@ if [[ ${#missing[@]} -gt 0 ]]; then
   exit 1
 fi
 
+uuid_re='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+invalid=()
+for var in RAILWAY_ENVIRONMENT_ID RAILWAY_MYSQL_SERVICE_ID RAILWAY_BACKEND_SERVICE_ID; do
+  val="${!var}"
+  if [[ ! "${val}" =~ ${uuid_re} ]]; then
+    invalid+=("${var} (must be UUID only, not a URL)")
+  fi
+done
+if [[ ${#invalid[@]} -gt 0 ]]; then
+  echo "Invalid values in ${ENV_FILE}:" >&2
+  printf '  - %s\n' "${invalid[@]}" >&2
+  exit 1
+fi
+
 for cmd in jq curl mysqldump mysql; do
   if ! command -v "${cmd}" >/dev/null 2>&1; then
     echo "Missing command: ${cmd} (install on Pi before first sync)" >&2

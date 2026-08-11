@@ -24,16 +24,33 @@ railway_api_graphql() {
   local variables="${2:-{}}"
   local dry_run="${3:-false}"
   if [[ "${dry_run}" == "true" ]]; then
-    railway_api_log "DRY-RUN GraphQL: ${query}"
+    railway_api_log "DRY-RUN GraphQL"
     echo "{}"
     return 0
   fi
-  local payload
-  payload="$(jq -n --arg q "${query}" --argjson v "${variables}" '{query: $q, variables: $v}')"
-  curl -sS -X POST "${RAILWAY_GRAPHQL_URL}" \
+
+  local compact_vars payload response http_code
+  if ! compact_vars="$(printf '%s' "${variables}" | jq -c '.')"; then
+    railway_api_log "Invalid GraphQL variables JSON"
+    return 1
+  fi
+  if ! payload="$(jq -n --arg q "${query}" --argjson v "${compact_vars}" '{query: $q, variables: $v}')"; then
+    railway_api_log "Failed to build GraphQL payload"
+    return 1
+  fi
+
+  response="$(curl -sS -w "\n%{http_code}" -X POST "${RAILWAY_GRAPHQL_URL}" \
     -H "Authorization: Bearer ${RAILWAY_TOKEN}" \
     -H "Content-Type: application/json" \
-    -d "${payload}"
+    -d "${payload}")"
+  http_code="$(echo "${response}" | tail -n1)"
+  response="$(echo "${response}" | sed '$d')"
+
+  if [[ "${http_code}" != "200" ]]; then
+    railway_api_log "GraphQL HTTP ${http_code}: ${response}"
+    return 1
+  fi
+  echo "${response}"
 }
 
 railway_api_get_active_deployment_id() {
@@ -61,13 +78,14 @@ railway_api_get_active_deployment_id() {
       }
     }
   }'
-  local variables
-  variables="$(jq -n \
+  local variables response
+  variables="$(jq -nc \
     --arg serviceId "${service_id}" \
     --arg environmentId "${environment_id}" \
     '{serviceId: $serviceId, environmentId: $environmentId}')"
-  local response
-  response="$(railway_api_graphql "${query}" "${variables}" "false")"
+  if ! response="$(railway_api_graphql "${query}" "${variables}" "false")"; then
+    return 1
+  fi
   if echo "${response}" | jq -e '.errors' >/dev/null 2>&1; then
     railway_api_log "GraphQL error: $(echo "${response}" | jq -c '.errors')"
     return 1
@@ -90,7 +108,7 @@ railway_api_service_redeploy() {
   local service_id="$1"
   local environment_id="$2"
   local dry_run="${3:-false}"
-  railway_api_log "Redeploying service ${service_id}"
+  railway_api_log "Waking Railway service ${service_id} (serviceInstanceRedeploy)"
   if [[ "${dry_run}" == "true" ]]; then
     railway_api_log "DRY-RUN: serviceInstanceRedeploy ${service_id}"
     return 0
@@ -98,13 +116,15 @@ railway_api_service_redeploy() {
   local query='mutation($serviceId: String!, $environmentId: String!) {
     serviceInstanceRedeploy(serviceId: $serviceId, environmentId: $environmentId)
   }'
-  local variables
-  variables="$(jq -n \
+  local variables response
+  variables="$(jq -nc \
     --arg serviceId "${service_id}" \
     --arg environmentId "${environment_id}" \
     '{serviceId: $serviceId, environmentId: $environmentId}')"
-  local response
-  response="$(railway_api_graphql "${query}" "${variables}" "false")"
+  if ! response="$(railway_api_graphql "${query}" "${variables}" "false")"; then
+    echo "Railway API request failed" >&2
+    return 1
+  fi
   if echo "${response}" | jq -e '.errors' >/dev/null 2>&1; then
     railway_api_log "serviceInstanceRedeploy failed: $(echo "${response}" | jq -c '.errors')"
     return 1
@@ -123,10 +143,12 @@ railway_api_deployment_stop() {
   local query='mutation($id: String!) {
     deploymentStop(id: $id)
   }'
-  local variables
-  variables="$(jq -n --arg id "${deployment_id}" '{id: $id}')"
-  local response
-  response="$(railway_api_graphql "${query}" "${variables}" "false")"
+  local variables response
+  variables="$(jq -nc --arg id "${deployment_id}" '{id: $id}')"
+  if ! response="$(railway_api_graphql "${query}" "${variables}" "false")"; then
+    echo "Railway API request failed" >&2
+    return 1
+  fi
   if echo "${response}" | jq -e '.errors' >/dev/null 2>&1; then
     railway_api_log "deploymentStop failed: $(echo "${response}" | jq -c '.errors')"
     return 1
