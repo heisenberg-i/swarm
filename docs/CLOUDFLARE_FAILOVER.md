@@ -94,7 +94,7 @@ Set the **same `JWT_SECRET`** on:
 - RPi `.env.rpi`
 - Railway backend variables
 
-Users stay logged in across failover if DB sync is recent (hourly).
+Users stay logged in across failover if DB sync is recent (daily sync).
 
 ---
 
@@ -102,25 +102,31 @@ Users stay logged in across failover if DB sync is recent (hourly).
 
 ```text
 RPi healthy     → Traffic to RPi (primary pool)
-RPi stops       → 2 failed checks (~20s) → Traffic to Railway
-RPi recovers    → Health OK → Traffic back to RPi
+RPi stops       → Railway health fails (MySQL/backend stopped) — manual wake required
+Manual wake     → Start MySQL + backend in Railway dashboard (~15–30 min)
+RPi recovers    → Health OK → Traffic back to RPi; run daily-railway-sync.sh
 ```
 
-After failback, run `./scripts/sync-to-railway.sh` on RPi to refresh Railway standby.
+While Railway MySQL and backend are **stopped** between daily syncs, Cloudflare cannot route to Railway until you manually start both services. See [RAILWAY_MANUAL_FAILOVER.md](RAILWAY_MANUAL_FAILOVER.md).
+
+After failback, run `./scripts/daily-railway-sync.sh` on RPi to refresh Railway standby and stop services again.
 
 ---
 
 ## 8. Testing drill
 
-1. Confirm RPi serves `https://api.swarm.co.in/api/health` → 200
+1. Confirm RPi serves `https://api.swarm.co.in/api/health` → 200, `deploymentRole: primary`
 2. Stop RPi: `docker compose -f docker-compose.rpi.yml down`
-3. Wait ~30s; confirm `api.swarm.co.in` routes to Railway
-4. Login and verify dashboard loads (data may be ≤1h stale)
-5. Restart RPi; confirm failback; run sync script
+3. Railway dashboard → start **MySQL**, wait ~2–3 min
+4. Railway dashboard → start **backend**
+5. Confirm `https://api.swarm.co.in/api/health` → `deploymentRole: standby` (may take ~30s)
+6. Login and verify dashboard loads (data may be ≤24h stale)
+7. Restart RPi; confirm failback; run `./scripts/daily-railway-sync.sh`
 
 ---
 
 ## Related
 
+- [RAILWAY_MANUAL_FAILOVER.md](RAILWAY_MANUAL_FAILOVER.md)
 - [RPi_PRIMARY_RUNBOOK.md](RPi_PRIMARY_RUNBOOK.md)
 - [RAILWAY_HOSTING.md](RAILWAY_HOSTING.md)

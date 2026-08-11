@@ -29,10 +29,10 @@ const sensorIcons = {
   LIQUID_LEVEL: <Opacity />,
 };
 
-export default function Dashboard() {
+export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const navigate = useNavigate();
   const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState('');
+  const [selectedPlant, setSelectedPlant] = useState(fixedPlantId || '');
   const [dashboard, setDashboard] = useState(null);
   const [hmiState, setHmiState] = useState(null);
   const [alerts, setAlerts] = useState([]);
@@ -47,6 +47,11 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (fixedPlantId) {
+      setSelectedPlant(Number(fixedPlantId));
+      setLoading(false);
+      return;
+    }
     plantAPI.getAll().then(({ data }) => {
       const list = data.data || [];
       setPlants(list);
@@ -58,7 +63,7 @@ export default function Dashboard() {
         setSelectedPlant(list[0].plantId);
       }
     }).finally(() => setLoading(false));
-  }, []);
+  }, [fixedPlantId]);
 
   useEffect(() => {
     if (!selectedPlant) return;
@@ -147,17 +152,21 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <Box sx={pageHeaderRow}>
-        <Typography variant="h5" sx={pageTitleSx}>Live Monitoring Dashboard</Typography>
-        <FormControl size="small" sx={responsiveSelect}>
-          <InputLabel>Select Plant</InputLabel>
-          <Select value={selectedPlant} label="Select Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
-            {plants.map((p) => (
-              <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+      {(!embedded || !hidePlantSelector) && (
+        <Box sx={pageHeaderRow}>
+          {!embedded && <Typography variant="h5" sx={pageTitleSx}>Live Monitoring Dashboard</Typography>}
+          {!hidePlantSelector && (
+            <FormControl size="small" sx={responsiveSelect}>
+              <InputLabel>Select Plant</InputLabel>
+              <Select value={selectedPlant} label="Select Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
+                {plants.map((p) => (
+                  <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </Box>
+      )}
 
       {hmiState && (
         <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #1e2430 0%, #0066CC 100%)', color: 'white' }}>

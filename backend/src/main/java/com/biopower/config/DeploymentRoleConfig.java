@@ -13,8 +13,14 @@ public class DeploymentRoleConfig {
             DeploymentRoleProperties deploymentRole,
             NovaSpaceOpProperties novaSpaceOpProperties,
             Environment environment) {
-        if (deploymentRole.isStandby() && !environment.containsProperty("NOVA_THINK_ENABLED")) {
-            novaSpaceOpProperties.getThink().setEnabled(false);
+        if (deploymentRole.isStandby()) {
+            novaSpaceOpProperties.setEnabled(false);
+            if (!environment.containsProperty("NOVA_THINK_ENABLED")) {
+                novaSpaceOpProperties.getThink().setEnabled(false);
+            }
+            if (!environment.containsProperty("NOVA_NARRATE_ENABLED")) {
+                novaSpaceOpProperties.getNarrate().setEnabled(false);
+            }
         }
     }
 }

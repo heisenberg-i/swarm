@@ -16,23 +16,26 @@ import Maintenance from './pages/Maintenance';
 import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import Partners from './pages/Partners';
 import Notifications from './pages/Notifications';
 import ChangePassword from './pages/ChangePassword';
 import Help from './pages/Help';
 import NovaSpaceOp from './pages/NovaSpaceOp';
 import PlantHmi from './pages/PlantHmi';
 import { isNativeApp } from './utils/networkError';
+import { getHomeRoute } from './utils/homeRoute';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+  if (roles && !roles.includes(user.role)) return <Navigate to={getHomeRoute(user.role)} replace />;
   return children;
 };
 
 function App() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const home = user ? getHomeRoute(user.role) : '/dashboard';
 
   useEffect(() => {
     if (!isNativeApp()) return undefined;
@@ -87,11 +90,12 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <Signup />} />
+      <Route path="/login" element={user ? <Navigate to={home} /> : <Login />} />
+      <Route path="/signup" element={user ? <Navigate to={home} /> : <Signup />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to={home} replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="plant-hmi" element={<PlantHmi />} />
         <Route path="plants" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Plants /></ProtectedRoute>} />
@@ -103,13 +107,14 @@ function App() {
         <Route path="maintenance" element={<Maintenance />} />
         <Route path="reports" element={<Reports />} />
         <Route path="users" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Users /></ProtectedRoute>} />
+        <Route path="partners" element={<ProtectedRoute roles={['SUPER_ADMIN']}><Partners /></ProtectedRoute>} />
         <Route path="settings" element={<ProtectedRoute roles={['SUPER_ADMIN']}><Settings /></ProtectedRoute>} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="change-password" element={<ChangePassword />} />
         <Route path="help" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR']}><Help /></ProtectedRoute>} />
         <Route path="nova-space-op" element={<NovaSpaceOp />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to={home} replace />} />
     </Routes>
   );
 }

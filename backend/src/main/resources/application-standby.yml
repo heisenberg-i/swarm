@@ -1,0 +1,35 @@
+# Railway warm standby — minimal footprint when Pi is primary.
+# Activate with: SPRING_PROFILES_ACTIVE=prod,standby  and  SWARM_DEPLOYMENT_ROLE=standby
+
+spring:
+  main:
+    lazy-initialization: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  datasource:
+    hikari:
+      minimum-idle: 0
+      maximum-pool-size: 2
+      idle-timeout: 20000
+      max-lifetime: 300000
+      keepalive-time: 0
+
+server:
+  tomcat:
+    threads:
+      max: 10
+      min-spare: 1
+
+biopower:
+  nova-space-op:
+    enabled: false
+    think:
+      enabled: false
+    narrate:
+      enabled: false
+
+logging:
+  level:
+    com.biopower: WARN
+    org.springframework: WARN

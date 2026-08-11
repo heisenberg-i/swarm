@@ -8,9 +8,9 @@ import { alertAPI, plantAPI } from '../services/api';
 import { formatDate } from '../utils/constants';
 import { pageTitleSx, responsiveSelect } from '../utils/responsive';
 
-export default function Alerts() {
+export default function Alerts({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState('');
+  const [selectedPlant, setSelectedPlant] = useState(fixedPlantId || '');
   const [alerts, setAlerts] = useState([]);
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -18,6 +18,10 @@ export default function Alerts() {
   const statuses = ['ACTIVE', 'ACKNOWLEDGED', 'RESOLVED'];
 
   useEffect(() => {
+    if (fixedPlantId) {
+      setSelectedPlant(Number(fixedPlantId));
+      return;
+    }
     plantAPI.getAll().then(({ data }) => {
       const list = data.data || [];
       setPlants(list);
@@ -29,7 +33,7 @@ export default function Alerts() {
         setSelectedPlant(list[0].plantId);
       }
     });
-  }, []);
+  }, [fixedPlantId]);
 
   const loadAlerts = () => {
     if (!selectedPlant) return;
@@ -55,20 +59,22 @@ export default function Alerts() {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 3, ...pageTitleSx }}>Alert Management</Typography>
+      {!embedded && <Typography variant="h5" sx={{ mb: 3, ...pageTitleSx }}>Alert Management</Typography>}
 
-      <FormControl sx={{ ...responsiveSelect, mb: 2 }} size="small">
-        <InputLabel>Plant</InputLabel>
-        <Select
-          value={selectedPlant}
-          label="Plant"
-          onChange={(e) => setSelectedPlant(e.target.value)}
-        >
-          {plants.map((p) => (
-            <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      {!hidePlantSelector && (
+        <FormControl sx={{ ...responsiveSelect, mb: 2 }} size="small">
+          <InputLabel>Plant</InputLabel>
+          <Select
+            value={selectedPlant}
+            label="Plant"
+            onChange={(e) => setSelectedPlant(e.target.value)}
+          >
+            {plants.map((p) => (
+              <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab label="Active" /><Tab label="Acknowledged" /><Tab label="Resolved" />

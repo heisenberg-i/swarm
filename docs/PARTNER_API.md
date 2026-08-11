@@ -1,19 +1,92 @@
 # SWARM Partner API (emPOWER Integration)
 
-**Base URL:** `http://localhost:8080/api/partner/v1`  
+**Production base URL:** `https://api.swarm.co.in/api/partner/v1`  
+**Local dev base URL:** `http://localhost:8080/api/partner/v1`  
 **Auth:** `Authorization: Bearer <api_key>`  
 **Direction:** Pull-only (emPOWER backend → SWARM). Read-only. No user sync. No Swarm UI embed.
 
 ---
 
-## Sandbox credentials (local dev)
+## Production health check
+
+```bash
+curl -H "Authorization: Bearer <your_api_key>" \
+  https://api.swarm.co.in/api/partner/v1/health
+```
+
+Expected response fields: `status`, `organizationId` (matches `externalOrgId`), `organizationName`, `serverTime`.
+
+---
+
+## Operator runbook (SWARM Super Admin)
+
+### 1. Create partner organization
+
+In SWARM UI: **emPOWER Partners** (`/partners`) or via API:
+
+```json
+POST /api/admin/partner/organizations
+Authorization: Bearer <super_admin_jwt>
+
+{
+  "name": "Tata Steel Jamshedpur",
+  "externalOrgId": "<emPOWER_organization_uuid>",
+  "plantIds": [1]
+}
+```
+
+- `externalOrgId` must match the emPOWER organization ID exactly.
+- `plantIds` is the allow-list — the API key can only read telemetry for those plants.
+
+### 2. Issue API key
+
+UI: select organization → **Create Key** → copy the key immediately (shown once).
+
+```json
+POST /api/admin/partner/api-keys
+{
+  "organizationId": 1,
+  "name": "emPOWER production"
+}
+```
+
+### 3. Hand off to emPOWER admin
+
+Provide once (secure channel):
+
+| Item | Value |
+|------|-------|
+| Base URL | `https://api.swarm.co.in/api/partner/v1` |
+| API key | `swk_…` (raw key) |
+| Organization ID | `externalOrgId` from step 1 |
+| Plant IDs | e.g. `[1]` |
+
+See [EMPOWER_HANDOFF.md](EMPOWER_HANDOFF.md) for emPOWER team implementation steps.
+
+### 4. Verify before handoff
+
+```bash
+curl -H "Authorization: Bearer <key>" https://api.swarm.co.in/api/partner/v1/health
+curl -H "Authorization: Bearer <key>" https://api.swarm.co.in/api/partner/v1/plants
+curl -H "Authorization: Bearer <key>" "https://api.swarm.co.in/api/partner/v1/telemetry/health/1"
+```
+
+### 5. Revoke and re-issue
+
+1. UI: **emPOWER Partners** → select org → revoke key (trash icon).
+2. Create a new key and send to emPOWER admin to update their vault.
+3. Old key stops working immediately.
+
+---
+
+## Sandbox credentials (local dev only)
+
+Enabled when `SWARM_PARTNER_SANDBOX_ENABLED=true` (default on primary/local; **false** on Railway standby).
 
 | Field | Value |
 |-------|-------|
 | Organization ID | `org_biopower_pilot` |
 | API key | `swk_sandbox_biopower_dev_2026` |
-
-Health check:
 
 ```bash
 curl -H "Authorization: Bearer swk_sandbox_biopower_dev_2026" \
@@ -86,19 +159,11 @@ JWT Super Admin endpoints (not for emPOWER):
 |--------|------|---------|
 | GET | `/api/admin/partner/organizations` | List orgs |
 | POST | `/api/admin/partner/organizations` | Create org |
+| GET | `/api/admin/partner/api-keys?organizationId=` | List keys (no secret) |
 | POST | `/api/admin/partner/api-keys` | Create API key |
 | DELETE | `/api/admin/partner/api-keys/{id}` | Revoke key |
 
-Create organization example:
-
-```json
-POST /api/admin/partner/organizations
-{
-  "name": "BIOPOWER Pilot",
-  "externalOrgId": "org_biopower_pilot",
-  "plantIds": [1, 2]
-}
-```
+SWARM UI: **emPOWER Partners** at `/partners` (SUPER_ADMIN only).
 
 ---
 
@@ -119,4 +184,10 @@ POST /api/admin/partner/organizations
 5. Contribution/costing is emPOWER-side — SWARM provides physical telemetry only
 6. Webhooks deferred — not required for P2
 
-See also: emPOWER `EMPOWER_SWARM_INTEGRATION_ARCHITECTURE.md`
+## Environment variables
+
+| Variable | Primary (Pi) | Standby (Railway) |
+|----------|--------------|-------------------|
+| `SWARM_PARTNER_SANDBOX_ENABLED` | `true` (default) | `false` |
+
+See also: [EMPOWER_HANDOFF.md](EMPOWER_HANDOFF.md), emPOWER `EMPOWER_SWARM_INTEGRATION_ARCHITECTURE.md`

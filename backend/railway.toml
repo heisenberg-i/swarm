@@ -6,3 +6,7 @@ dockerfilePath = "Dockerfile"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 600
 restartPolicyType = "ON_FAILURE"
+
+[deploy.limitOverride.containers]
+memoryBytes = 402653184
+cpu = 0.5

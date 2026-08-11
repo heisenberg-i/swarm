@@ -100,9 +100,9 @@ See [CLOUDFLARE_FAILOVER.md](CLOUDFLARE_FAILOVER.md) for health checks and failo
 
 ---
 
-## 6. Hourly DB sync to Railway
+## 6. Daily DB sync to Railway (+ sleep)
 
-Railway standby should stay ≤1 hour behind primary.
+Pi pushes a mysqldump to Railway **once per day**, then **stops** Railway MySQL and backend to save RAM (~0 MB idle). Failover is **manual** — see [RAILWAY_MANUAL_FAILOVER.md](RAILWAY_MANUAL_FAILOVER.md).
 
 ### Get Railway MySQL credentials
 
@@ -117,18 +117,33 @@ RAILWAY_MYSQL_USER=root
 RAILWAY_MYSQL_PASSWORD=...
 RAILWAY_MYSQL_DATABASE=railway
 SYNC_BACKUP_DIR=/mnt/ssd/swarm/backups
+
+# Railway API (daily sleep/wake)
+RAILWAY_TOKEN=
+RAILWAY_PROJECT_ID=b950f324-280f-4cce-aee6-147f0dfd08e5
+RAILWAY_ENVIRONMENT_ID=
+RAILWAY_MYSQL_SERVICE_ID=
+RAILWAY_BACKEND_SERVICE_ID=
 ```
+
+Create `RAILWAY_TOKEN` in Railway → Account Settings → Tokens. Service IDs are in each service's URL/settings.
 
 ### Test sync
 
 ```bash
-chmod +x scripts/sync-to-railway.sh
-./scripts/sync-to-railway.sh --dry-run
-./scripts/sync-to-railway.sh --dump-only   # local backup only first
-./scripts/sync-to-railway.sh               # full dump + Railway restore
+chmod +x scripts/daily-railway-sync.sh scripts/railway-api.sh scripts/sync-to-railway.sh
+./scripts/daily-railway-sync.sh --dry-run
+./scripts/daily-railway-sync.sh --dump-only   # local backup only first
+./scripts/daily-railway-sync.sh               # full cycle: wake → restore → stop
 ```
 
-### Cron (hourly)
+Or install cron automatically:
+
+```bash
+./scripts/setup-daily-railway-cron.sh
+```
+
+### Cron (daily 02:00 IST + weekly local backup)
 
 ```bash
 crontab -e
@@ -137,10 +152,11 @@ crontab -e
 Add:
 
 ```cron
-0 * * * * cd /home/pi/swarm_webapp && ./scripts/sync-to-railway.sh >> /var/log/swarm-sync.log 2>&1
+0 2 * * * cd /home/swarm/swarm_webapp && ./scripts/daily-railway-sync.sh >> /var/log/swarm-sync.log 2>&1
+0 3 * * 0 cd /home/swarm/swarm_webapp && ./scripts/sync-to-railway.sh --dump-only >> /var/log/swarm-sync.log 2>&1
 ```
 
-**Data gap on failover:** up to 1 hour of telemetry unless you add a 15-minute incremental sync.
+**Data gap on failover:** up to **24 hours** of telemetry (last daily sync).
 
 ---
 
@@ -149,21 +165,27 @@ Add:
 | Role | Host | Env |
 |------|------|-----|
 | **Primary** | Raspberry Pi | `SWARM_DEPLOYMENT_ROLE=primary` |
-| **Standby** | Railway | `SWARM_DEPLOYMENT_ROLE=standby` |
+| **Standby** | Railway (stopped between syncs) | `SWARM_DEPLOYMENT_ROLE=standby` |
 
 - Traffic → RPi via Cloudflare (when healthy)
 - ESP → RPi API (LAN or tunnel URL)
-- Hourly cron syncs DB → Railway
-- Railway runs slim: 512 MB backend, 256 MB frontend, JVM capped
+- Daily cron syncs DB → Railway, then stops MySQL + backend
+- Railway idle RAM ~0 MB between sync windows
 
 ---
 
 ## 8. Failover (RPi down)
 
-1. Cloudflare health check fails on RPi (~20–30s with 10s interval).
-2. Traffic routes to Railway standby pool.
-3. ESP continues posting if using stable hostname `api.swarm.co.in`.
-4. Users may lose up to 1 hour of data (last sync).
+Railway MySQL and backend are **stopped** between daily syncs. **Manual wake required:**
+
+1. Confirm Pi unhealthy (`curl https://api.swarm.co.in/api/health` fails).
+2. Railway dashboard → start **MySQL**, wait ~2–3 min.
+3. Railway dashboard → start **backend**.
+4. Cloudflare routes to Railway once health checks pass (~30s).
+
+Full steps: [RAILWAY_MANUAL_FAILOVER.md](RAILWAY_MANUAL_FAILOVER.md).
+
+Users may lose up to **24 hours** of data (last sync).
 
 ---
 
@@ -171,9 +193,9 @@ Add:
 
 1. Start RPi stack: `docker compose -f docker-compose.rpi.yml up -d`
 2. Verify `/api/health` on RPi.
-3. Run one-way sync RPi → Railway to realign standby:
+3. Run daily sync to refresh Railway and stop services again:
    ```bash
-   ./scripts/sync-to-railway.sh
+   ./scripts/daily-railway-sync.sh
    ```
 4. Cloudflare marks primary pool healthy; traffic returns to RPi.
 

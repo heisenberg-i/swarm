@@ -24,7 +24,7 @@ import {
 import { equipmentTagsForZones } from '../data/pidRegistry';
 import { contentMaxWidth, pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsive';
 
-export default function PlantHmi() {
+export default function PlantHmi({ fixedPlantId, hidePlantSelector = false, embedded = false }) {
   const { canManagePlants, user } = useAuth();
   const [searchParams] = useSearchParams();
   const [plants, setPlants] = useState([]);
@@ -56,6 +56,11 @@ export default function PlantHmi() {
   }, []);
 
   useEffect(() => {
+    if (fixedPlantId) {
+      setSelectedPlant(Number(fixedPlantId));
+      setLoading(false);
+      return;
+    }
     plantAPI.getAll().then(({ data }) => {
       const list = data.data || [];
       const hmiPlants = list.filter((p) => p.feedstockType?.includes('P&ID'));
@@ -69,7 +74,7 @@ export default function PlantHmi() {
         setSelectedPlant(hmiPlant.plantId);
       }
     }).finally(() => setLoading(false));
-  }, [searchParams]);
+  }, [searchParams, fixedPlantId]);
 
   useEffect(() => {
     if (!selectedPlant || cmdLoading) return undefined;
@@ -145,22 +150,26 @@ export default function PlantHmi() {
       position: 'fixed', inset: 0, zIndex: 1300, bgcolor: 'background.default',
       p: { xs: 1, sm: 2 }, overflow: 'auto',
     } : contentMaxWidth}>
-      <Box sx={pageHeaderRow}>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h5" sx={pageTitleSx}>SWARM Plant HMI</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-            {SWARM_PLATFORM.tagline} · {SWARM_PLATFORM.pid}
-          </Typography>
-        </Box>
+      <Box sx={embedded ? { mb: 1 } : pageHeaderRow}>
+        {!embedded && (
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h5" sx={pageTitleSx}>SWARM Plant HMI</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              {SWARM_PLATFORM.tagline} · {SWARM_PLATFORM.pid}
+            </Typography>
+          </Box>
+        )}
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
-          <FormControl size="small" sx={responsiveSelect}>
-            <InputLabel>Plant</InputLabel>
-            <Select value={selectedPlant} label="Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
-              {plants.map((p) => (
-                <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {!hidePlantSelector && (
+            <FormControl size="small" sx={responsiveSelect}>
+              <InputLabel>Plant</InputLabel>
+              <Select value={selectedPlant} label="Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
+                {plants.map((p) => (
+                  <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
           <Tooltip title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
             <IconButton onClick={() => setFullscreen((f) => !f)}>
               {fullscreen ? <FullscreenExit /> : <Fullscreen />}

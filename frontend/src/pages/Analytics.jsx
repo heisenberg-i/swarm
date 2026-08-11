@@ -10,21 +10,26 @@ import { subHours, subDays, subWeeks, subMonths, format } from 'date-fns';
 
 const chartColors = ['#0066CC', '#00A86B', '#DC3545', '#FFC107', '#6f42c1'];
 
-export default function Analytics() {
+export default function Analytics({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState('');
+  const [selectedPlant, setSelectedPlant] = useState(fixedPlantId || '');
   const [range, setRange] = useState('day');
   const [sensorType, setSensorType] = useState('TEMPERATURE');
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (fixedPlantId) {
+      setSelectedPlant(Number(fixedPlantId));
+      plantAPI.getById(fixedPlantId).then(({ data }) => setPlants([data.data])).catch(() => {});
+      return;
+    }
     plantAPI.getAll().then(({ data }) => {
       const list = data.data || [];
       setPlants(list);
       if (list.length > 0) setSelectedPlant(list[0].plantId);
     });
-  }, []);
+  }, [fixedPlantId]);
 
   const sensorOptions = useMemo(
     () => getSensorTypesForPlant(plants.find((p) => p.plantId === Number(selectedPlant))),
@@ -59,17 +64,19 @@ export default function Analytics() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>Historical Analytics</Typography>
+      {!embedded && <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>Historical Analytics</Typography>}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Plant</InputLabel>
-            <Select value={selectedPlant} label="Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
-              {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </Grid>
+        {!hidePlantSelector && (
+          <Grid item xs={12} sm={4}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Plant</InputLabel>
+              <Select value={selectedPlant} label="Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
+                {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
+              </Select>
+            </FormControl>
+          </Grid>
+        )}
         <Grid item xs={12} sm={4}>
           <FormControl fullWidth size="small">
             <InputLabel>Sensor</InputLabel>

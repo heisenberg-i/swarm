@@ -8,19 +8,24 @@ import { plantAPI, aiAPI } from '../services/api';
 import { getHealthColor } from '../utils/constants';
 import { pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsive';
 
-export default function AIRecommendations() {
+export default function AIRecommendations({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState('');
+  const [selectedPlant, setSelectedPlant] = useState(fixedPlantId || '');
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (fixedPlantId) {
+      setSelectedPlant(Number(fixedPlantId));
+      plantAPI.getById(fixedPlantId).then(({ data }) => setPlants([data.data])).catch(() => {});
+      return;
+    }
     plantAPI.getAll().then(({ data }) => {
       const list = data.data || [];
       setPlants(list);
       if (list.length > 0) setSelectedPlant(list[0].plantId);
     });
-  }, []);
+  }, [fixedPlantId]);
 
   useEffect(() => {
     if (!selectedPlant) return;
@@ -37,13 +42,15 @@ export default function AIRecommendations() {
   return (
     <Box>
       <Box sx={pageHeaderRow}>
-        <Typography variant="h5" sx={pageTitleSx}>AI Plant Health Engine</Typography>
-        <FormControl size="small" sx={responsiveSelect}>
-          <InputLabel>Plant</InputLabel>
-          <Select value={selectedPlant} label="Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
-            {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
-          </Select>
-        </FormControl>
+        {!embedded && <Typography variant="h5" sx={pageTitleSx}>AI Plant Health Engine</Typography>}
+        {!hidePlantSelector && (
+          <FormControl size="small" sx={responsiveSelect}>
+            <InputLabel>Plant</InputLabel>
+            <Select value={selectedPlant} label="Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
+              {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>

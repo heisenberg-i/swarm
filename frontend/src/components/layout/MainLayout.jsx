@@ -9,7 +9,7 @@ import {
   Menu as MenuIcon, Dashboard, Factory, Sensors, ShowChart,
   Notifications as NotifIcon,   Psychology, Build, Assessment,
   People, Settings, Logout, Password, BluetoothConnected, MenuBook,
-  PrecisionManufacturing, SmartToy,
+  PrecisionManufacturing, SmartToy, VpnKey,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { notificationAPI } from '../../services/api';
@@ -32,6 +32,7 @@ const menuItems = [
   { text: 'Maintenance', icon: <Build />, path: '/maintenance', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
   { text: 'Reports', icon: <Assessment />, path: '/reports', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
   { text: 'Users', icon: <People />, path: '/users', roles: ['SUPER_ADMIN', 'PLANT_ADMIN'] },
+  { text: 'emPOWER Partners', icon: <VpnKey />, path: '/partners', roles: ['SUPER_ADMIN'] },
   { text: 'Settings', icon: <Settings />, path: '/settings', roles: ['SUPER_ADMIN'] },
   { text: 'User Manual', icon: <MenuBook />, path: '/help', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
 ];

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Card, CardContent, Typography, CircularProgress, Alert, Button } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/common/Logo';
+import { getHomeRoute } from '../utils/homeRoute';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -22,7 +23,7 @@ export default function AuthCallback() {
       return;
     }
     loginWithSsoCode(code)
-      .then(() => navigate('/dashboard', { replace: true }))
+      .then((loggedIn) => navigate(getHomeRoute(loggedIn.role), { replace: true }))
       .catch((e) => setError(e.response?.data?.message || 'SSO login failed.'));
   }, [searchParams, loginWithSsoCode, navigate]);
 

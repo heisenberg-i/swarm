@@ -12,25 +12,27 @@ import { pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsiv
 
 const emptyForm = { plantId: '', nodeName: '', sensorType: 'TEMPERATURE', firmwareVersion: 'v2.1.0', batteryLevel: 100, signalStrength: 90, status: 'ACTIVE' };
 
-export default function Sensors() {
+export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const { isSuperAdmin } = useAuth();
   const [nodes, setNodes] = useState([]);
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState(emptyForm);
-  const [filterPlant, setFilterPlant] = useState('');
+  const [form, setForm] = useState({ ...emptyForm, plantId: fixedPlantId || '' });
+  const [filterPlant, setFilterPlant] = useState(fixedPlantId || '');
 
   const loadData = () => {
     Promise.all([sensorAPI.getAll(), plantAPI.getAll()])
       .then(([nodesRes, plantsRes]) => {
         setNodes(nodesRes.data.data || []);
-        setPlants(plantsRes.data.data || []);
+        const list = plantsRes.data.data || [];
+        setPlants(fixedPlantId ? list.filter((p) => p.plantId === Number(fixedPlantId)) : list);
+        if (fixedPlantId) setFilterPlant(Number(fixedPlantId));
       }).finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [fixedPlantId]);
 
   const filtered = filterPlant ? nodes.filter((n) => n.plantId === Number(filterPlant)) : nodes;
   const selectedPlant = plants.find((p) => p.plantId === Number(form.plantId));
@@ -61,19 +63,25 @@ export default function Sensors() {
     <Box>
       <Box sx={pageHeaderRow}>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h5" sx={pageTitleSx}>Sensor & Hardware Management</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Super admin registers and edits installed hardware for each SaaS project.
-          </Typography>
+          {!embedded && (
+            <>
+              <Typography variant="h5" sx={pageTitleSx}>Sensor & Hardware Management</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Super admin registers and edits installed hardware for each SaaS project.
+              </Typography>
+            </>
+          )}
         </Box>
         <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
-          <FormControl size="small" sx={responsiveSelect}>
-            <InputLabel>Filter by Plant</InputLabel>
-            <Select value={filterPlant} label="Filter by Plant" onChange={(e) => setFilterPlant(e.target.value)}>
-              <MenuItem value="">All Plants</MenuItem>
-              {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
-            </Select>
-          </FormControl>
+          {!hidePlantSelector && (
+            <FormControl size="small" sx={responsiveSelect}>
+              <InputLabel>Filter by Plant</InputLabel>
+              <Select value={filterPlant} label="Filter by Plant" onChange={(e) => setFilterPlant(e.target.value)}>
+                <MenuItem value="">All Plants</MenuItem>
+                {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
+              </Select>
+            </FormControl>
+          )}
           {isSuperAdmin && (
             <Button variant="contained" startIcon={<Add />} onClick={() => { setEditId(null); setForm(emptyForm); setDialogOpen(true); }}>
               Register Hardware

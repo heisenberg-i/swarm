@@ -71,6 +71,9 @@ biopower:
   swarm:
     # ESP hub batch ingest base URL (must end with /api). Set on Railway for production pairing.
     public-api-url: ${SWARM_PUBLIC_API_URL:}
+    partner:
+      sandbox:
+        enabled: ${SWARM_PARTNER_SANDBOX_ENABLED:true}
   nova-space-op:
     enabled: ${NOVA_SPACE_OP_ENABLED:true}
     llm:

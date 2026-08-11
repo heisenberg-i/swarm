@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import Logo from '../components/common/Logo';
 import { networkErrorMessage } from '../utils/networkError';
 import { loadSsoConfig, redirectToSso } from '../utils/sso';
+import { getHomeRoute } from '../utils/homeRoute';
 
 const O = {
   amber: '#FF9500',
@@ -72,8 +73,8 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const loggedIn = await login(email, password);
+      navigate(getHomeRoute(loggedIn.role));
     } catch (err) {
       const networkMsg = networkErrorMessage(err);
       if (networkMsg) {

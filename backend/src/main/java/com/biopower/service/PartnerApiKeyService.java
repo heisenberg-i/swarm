@@ -3,6 +3,7 @@ package com.biopower.service;
 import com.biopower.dto.request.PartnerApiKeyRequest;
 import com.biopower.dto.request.PartnerOrganizationRequest;
 import com.biopower.dto.response.PartnerApiKeyCreatedResponse;
+import com.biopower.dto.response.PartnerApiKeyResponse;
 import com.biopower.dto.response.PartnerOrganizationResponse;
 import com.biopower.exception.BadRequestException;
 import com.biopower.exception.ResourceNotFoundException;
@@ -135,6 +136,19 @@ public class PartnerApiKeyService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<PartnerApiKeyResponse> listApiKeys(Long organizationId) {
+        if (organizationId == null) {
+            throw new BadRequestException("organizationId is required");
+        }
+        if (!organizationRepository.existsById(organizationId)) {
+            throw new ResourceNotFoundException("Partner organization not found");
+        }
+        return apiKeyRepository.findByOrganizationIdOrderByCreatedAtDesc(organizationId).stream()
+                .map(this::toApiKeyResponse)
+                .collect(Collectors.toList());
+    }
+
     private Set<Plant> resolvePlants(List<Long> plantIds) {
         if (plantIds == null || plantIds.isEmpty()) {
             return new HashSet<>();
@@ -154,6 +168,20 @@ public class PartnerApiKeyService {
                 .active(org.isActive())
                 .plantIds(org.getAllowedPlants().stream().map(Plant::getPlantId).toList())
                 .createdAt(org.getCreatedAt())
+                .build();
+    }
+
+    private PartnerApiKeyResponse toApiKeyResponse(PartnerApiKey key) {
+        return PartnerApiKeyResponse.builder()
+                .id(key.getId())
+                .organizationId(key.getOrganization().getId())
+                .name(key.getName())
+                .keyPrefix(key.getKeyPrefix())
+                .active(key.isActive())
+                .expiresAt(key.getExpiresAt())
+                .revokedAt(key.getRevokedAt())
+                .lastUsedAt(key.getLastUsedAt())
+                .createdAt(key.getCreatedAt())
                 .build();
     }
 }

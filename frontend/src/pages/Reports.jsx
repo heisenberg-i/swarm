@@ -10,21 +10,25 @@ import { formatDate } from '../utils/constants';
 const REPORT_TYPES = ['DAILY', 'WEEKLY', 'MONTHLY', 'PLANT_SUMMARY', 'GAS_PRODUCTION', 'ALERTS', 'PLANT_HEALTH'];
 const FORMATS = ['PDF', 'EXCEL', 'CSV'];
 
-export default function Reports() {
+export default function Reports({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const [reports, setReports] = useState([]);
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ plantId: '', reportType: 'DAILY', format: 'PDF' });
+  const [form, setForm] = useState({ plantId: fixedPlantId || '', reportType: 'DAILY', format: 'PDF' });
 
   const loadReports = () => {
-    reportAPI.getAll().then(({ data }) => setReports(data.data || [])).finally(() => setLoading(false));
+    reportAPI.getAll(fixedPlantId || undefined).then(({ data }) => setReports(data.data || [])).finally(() => setLoading(false));
   };
 
   useEffect(() => {
     loadReports();
+    if (fixedPlantId) {
+      plantAPI.getById(fixedPlantId).then(({ data }) => setPlants([data.data])).catch(() => {});
+      return;
+    }
     plantAPI.getAll().then(({ data }) => setPlants(data.data || []));
-  }, []);
+  }, [fixedPlantId]);
 
   const handleGenerate = async () => {
     await reportAPI.generate({ ...form, plantId: form.plantId ? Number(form.plantId) : null });
@@ -35,7 +39,7 @@ export default function Reports() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, flexWrap: 'wrap', gap: 2, mb: 3 }}>
-        <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Report Management</Typography>
+        {!embedded && <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Report Management</Typography>}
         <Button variant="contained" startIcon={<Add />} onClick={() => setDialogOpen(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>Generate Report</Button>
       </Box>
 

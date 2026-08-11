@@ -19,7 +19,7 @@ const emptySensorForm = {
 
 const normalizeIds = (ids) => (ids || []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
 
-export default function Users() {
+export default function Users({ embedded = false, filterPlantId }) {
   const { isSuperAdmin, canManagePlants, user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [plants, setPlants] = useState([]);
@@ -115,7 +115,13 @@ export default function Users() {
 
   const loadUsers = () => {
     setLoading(true);
-    userAPI.getAll().then(({ data }) => setUsers(data.data || [])).finally(() => setLoading(false));
+    userAPI.getAll().then(({ data }) => {
+      let list = data.data || [];
+      if (filterPlantId) {
+        list = list.filter((u) => (u.plantIds || []).map(Number).includes(Number(filterPlantId)));
+      }
+      setUsers(list);
+    }).finally(() => setLoading(false));
   };
 
   useEffect(() => {

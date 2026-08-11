@@ -24,16 +24,17 @@ railway link -p b950f324-280f-4cce-aee6-147f0dfd08e5 -e production
 
 ---
 
-## Services (all Online)
+## Services (Pi primary — Railway standby)
 
-| Service | Root dir | Public URL | Role |
-|---------|----------|------------|------|
-| **MySQL** | (template) | internal: `mysql.railway.internal` | Database |
-| **backend** | `backend` | https://backend-production-a841.up.railway.app | Spring Boot API (`/api`) |
-| **swarm_webapp** | `frontend` | https://app.swarm.co.in | React UI + Capacitor APK |
+| Service | Root dir | Public URL | Standby role |
+|---------|----------|------------|--------------|
+| **MySQL** | (template) | internal: `mysql.railway.internal` | DB replica (Pi sync) — **keep running** |
+| **backend** | `backend` | https://backend-production-a841.up.railway.app | Failover API — **Serverless on** |
+| **swarm_webapp** | `frontend` | was `app.swarm.co.in` | **Stop/remove** — Pi serves the app |
 
 ```
-MySQL ──► backend ──► swarm_webapp (app.swarm.co.in)
+Pi (live)     →  api.swarm.co.in + app.swarm.co.in
+Railway       →  MySQL + backend only (idle until Pi fails)
 ```
 
 ---
@@ -66,53 +67,45 @@ IDENTITY_MODE=local
 SAAS_ACCOUNTS_URL=https://accounts.empowerapp.in
 SAAS_CLIENT_ID=swarm_webapp
 SAAS_APP_URL=https://app.swarm.co.in
-SWARM_PUBLIC_API_URL=https://backend-production-a841.up.railway.app/api
+SWARM_PUBLIC_API_URL=https://api.swarm.co.in/api
 
-# Production profile + Railway standby (RPi-primary architecture)
-JAVA_TOOL_OPTIONS=-XX:+UseContainerSupport -Xms128m -Xmx384m
-SPRING_PROFILES_ACTIVE=prod
+# Standby — minimal RAM (see application-standby.yml + docs/RAILWAY_STANDBY_OPTIMIZATION.md)
+JAVA_TOOL_OPTIONS=-XX:+UseContainerSupport -Xms64m -Xmx256m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m
+SPRING_PROFILES_ACTIVE=prod,standby
 SWARM_DEPLOYMENT_ROLE=standby
-SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SWARM_PARTNER_SANDBOX_ENABLED=false
+RAILWAY_TELEMETRY_DISABLED=true
+NOVA_SPACE_OP_ENABLED=false
+NOVA_THINK_ENABLED=false
+NOVA_NARRATE_ENABLED=false
+SPRING_JPA_HIBERNATE_DDL_AUTO=validate
 SENSOR_RETENTION_DAYS=30
 AI_RECOMMENDATION_RETENTION_DAYS=30
 AI_RECOMMENDATION_MAX_PER_PLANT=100
 NOVA_MESSAGE_RETENTION_DAYS=90
-
-# Nova Space OP — LLM provider failover (set in Railway, never commit values)
-NOVA_SPACE_OP_ENABLED=true
-NOVA_THINK_ENABLED=true
-NOVA_NARRATE_ENABLED=true
-GROQ_API_KEY=
-GROQ_API_KEY_2=
-GROQ_API_KEY_3=
-GROQ_API_KEY_4=
-OPENROUTER_API_KEY=
-OPENROUTER_API_KEY_2=
-OPENROUTER_API_KEY_3=
-OPENROUTER_API_KEY_4=
-GEMINI_API_KEY=
-GEMINI_API_KEY_2=
-NOVA_GROQ_MODEL=llama-3.3-70b-versatile
-NOVA_OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct
-NOVA_GEMINI_MODEL=gemini-2.0-flash
 ```
 
-### swarm_webapp service
+Copy-paste reference: [`.env.railway.standby.example`](../.env.railway.standby.example)
+
+### swarm_webapp service — **stop on Railway**
+
+Pi serves `https://app.swarm.co.in`. Remove or pause **swarm_webapp** on Railway to save ~100–150 MB idle RAM.
+
+If you keep it for UI failover only, use Serverless +:
 
 ```env
-VITE_API_URL=https://backend-production-a841.up.railway.app/api
+VITE_API_URL=https://api.swarm.co.in/api
 ```
-
-The web app and APK call the backend API directly (no nginx `/api` proxy).
 
 ### Recommended memory limits (Railway standby)
 
 | Service | Limit |
 |---------|-------|
-| **backend** | 512 MB |
-| **swarm_webapp** (frontend) | 256 MB |
+| **backend** | 384 MB (see `backend/railway.toml`) |
+| **MySQL** | 512 MB |
+| **swarm_webapp** | **stopped** (recommended) |
 
-With `JAVA_TOOL_OPTIONS` and `SPRING_PROFILES_ACTIVE=prod`, the backend JVM is capped at 384 MB heap inside the container.
+With `JAVA_TOOL_OPTIONS` above, standby JVM heap is capped at **256 MB**.
 
 ### Railway backend crashed?
 
@@ -135,12 +128,16 @@ JWT_SECRET=<same as Pi>
 
 ---
 
-When RPi is the live primary, Railway runs as **standby**. See:
+When RPi is the live primary, Railway runs as **standby** (MySQL + backend **stopped** between daily syncs). See:
 
-- [RPi_PRIMARY_RUNBOOK.md](RPi_PRIMARY_RUNBOOK.md) — Pi setup, tunnel, hourly sync
-- [CLOUDFLARE_FAILOVER.md](CLOUDFLARE_FAILOVER.md) — 10s health checks and failover pools
+- [RAILWAY_STANDBY_OPTIMIZATION.md](RAILWAY_STANDBY_OPTIMIZATION.md) — daily MySQL sleep (~0 MB idle)
+- [RAILWAY_MANUAL_FAILOVER.md](RAILWAY_MANUAL_FAILOVER.md) — manual wake when Pi fails
+- [RAILWAY_COST_OPTIMIZATION.md](RAILWAY_COST_OPTIMIZATION.md) — light standby (Serverless + sync)
+- [RPi_PRIMARY_RUNBOOK.md](RPi_PRIMARY_RUNBOOK.md) — Pi setup, tunnel, daily sync
+- [CLOUDFLARE_FAILOVER.md](CLOUDFLARE_FAILOVER.md) — health checks and failover pools
 - `docker-compose.rpi.yml` — arm64 primary stack
-- `scripts/sync-to-railway.sh` — hourly mysqldump to Railway
+- `scripts/daily-railway-sync.sh` — daily mysqldump + Railway sleep
+- `scripts/sync-to-railway.sh` — on-demand sync or local backup only
 
 ---
 

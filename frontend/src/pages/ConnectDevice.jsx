@@ -28,7 +28,7 @@ async function espConfigure(ip, password, config) {
   return configureEsp(ip, password, config);
 }
 
-export default function ConnectDevice() {
+export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -38,7 +38,7 @@ export default function ConnectDevice() {
   const [operators, setOperators] = useState([]);
   const [espIp, setEspIp] = useState('');
   const [devicePassword, setDevicePassword] = useState('');
-  const [plantId, setPlantId] = useState('');
+  const [plantId, setPlantId] = useState(fixedPlantId || '');
   const [assignToUserId, setAssignToUserId] = useState('');
   const [deviceName, setDeviceName] = useState('');
   const [swarmUrl, setSwarmUrl] = useState('');
@@ -49,11 +49,16 @@ export default function ConnectDevice() {
   const [pairResult, setPairResult] = useState(null);
 
   useEffect(() => {
-    plantAPI.getAll().then(({ data }) => setPlants(data.data || [])).catch(() => {});
+    if (fixedPlantId) {
+      setPlantId(String(fixedPlantId));
+      plantAPI.getById(fixedPlantId).then(({ data }) => setPlants([data.data])).catch(() => {});
+    } else {
+      plantAPI.getAll().then(({ data }) => setPlants(data.data || [])).catch(() => {});
+    }
     deviceAPI.getSwarmUrl()
       .then(({ data }) => setSwarmUrl(data.data || ''))
       .catch(() => {});
-  }, []);
+  }, [fixedPlantId]);
 
   useEffect(() => {
     if (!canManageUsers) return;
@@ -264,10 +269,14 @@ export default function ConnectDevice() {
           <CardContent>
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
-                <TextField fullWidth select label="Plant" value={plantId}
-                  onChange={(e) => { setPlantId(e.target.value); setAssignToUserId(''); }}>
-                  {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
-                </TextField>
+                {hidePlantSelector ? (
+                  <TextField fullWidth label="Plant" value={plants.find((p) => String(p.plantId) === String(plantId))?.plantName || plantId} disabled />
+                ) : (
+                  <TextField fullWidth select label="Plant" value={plantId}
+                    onChange={(e) => { setPlantId(e.target.value); setAssignToUserId(''); }}>
+                    {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
+                  </TextField>
+                )}
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField fullWidth label="Device name" value={deviceName}

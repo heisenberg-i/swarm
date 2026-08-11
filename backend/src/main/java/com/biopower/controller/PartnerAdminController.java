@@ -4,6 +4,7 @@ import com.biopower.dto.request.PartnerApiKeyRequest;
 import com.biopower.dto.request.PartnerOrganizationRequest;
 import com.biopower.dto.response.ApiResponse;
 import com.biopower.dto.response.PartnerApiKeyCreatedResponse;
+import com.biopower.dto.response.PartnerApiKeyResponse;
 import com.biopower.dto.response.PartnerOrganizationResponse;
 import com.biopower.service.PartnerApiKeyService;
 import jakarta.validation.Valid;
@@ -31,6 +32,12 @@ public class PartnerAdminController {
             @Valid @RequestBody PartnerOrganizationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Organization created", partnerApiKeyService.createOrganization(request)));
+    }
+
+    @GetMapping("/api-keys")
+    public ResponseEntity<ApiResponse<List<PartnerApiKeyResponse>>> listApiKeys(
+            @RequestParam Long organizationId) {
+        return ResponseEntity.ok(ApiResponse.success(partnerApiKeyService.listApiKeys(organizationId)));
     }
 
     @PostMapping("/api-keys")
