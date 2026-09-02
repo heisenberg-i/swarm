@@ -25,6 +25,7 @@ public class UserPrincipal implements UserDetails {
     private final boolean enabled;
     private final List<Long> plantIds;
     private final List<Long> nodeIds;
+    private final Long companyId;
 
     public static UserPrincipal create(User user) {
         List<GrantedAuthority> authorities = List.of(
@@ -35,6 +36,7 @@ public class UserPrincipal implements UserDetails {
         List<Long> nodeIds = user.getAssignedSensorNodes().stream()
                 .map(SensorNode::getNodeId)
                 .collect(Collectors.toList());
+        Long companyId = user.getCompany() != null ? user.getCompany().getId() : null;
 
         return new UserPrincipal(
                 user.getId(),
@@ -44,7 +46,8 @@ public class UserPrincipal implements UserDetails {
                 authorities,
                 user.getStatus() == UserStatus.ACTIVE,
                 plantIds,
-                nodeIds
+                nodeIds,
+                companyId
         );
     }
 

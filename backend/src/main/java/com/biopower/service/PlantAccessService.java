@@ -2,7 +2,6 @@ package com.biopower.service;
 
 import com.biopower.model.entity.Plant;
 import com.biopower.model.entity.SensorNode;
-import com.biopower.repository.PlantRepository;
 import com.biopower.repository.UserRepository;
 import com.biopower.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -18,32 +17,36 @@ import java.util.stream.Collectors;
 public class PlantAccessService {
 
     private final UserRepository userRepository;
-    private final PlantRepository plantRepository;
+
+    public boolean isControlCenterAdmin(UserPrincipal principal) {
+        return hasRole(principal, "ROLE_CONTROL_CENTER_ADMIN");
+    }
 
     public boolean isSuperAdmin(UserPrincipal principal) {
-        return principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+        return hasRole(principal, "ROLE_SUPER_ADMIN");
     }
 
     public boolean isPlantAdmin(UserPrincipal principal) {
-        return principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_PLANT_ADMIN"));
+        return hasRole(principal, "ROLE_PLANT_ADMIN");
     }
 
     public boolean isOperator(UserPrincipal principal) {
-        return principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_OPERATOR"));
+        return hasRole(principal, "ROLE_OPERATOR");
     }
 
     public boolean canManageUsers(UserPrincipal principal) {
         return isSuperAdmin(principal) || isPlantAdmin(principal);
     }
 
-    public void assertCanAccessPlant(UserPrincipal principal, Long plantId) {
-        if (isSuperAdmin(principal)) {
-            return;
+    public void assertPlantAppUser(UserPrincipal principal) {
+        if (isControlCenterAdmin(principal)) {
+            throw new AccessDeniedException("Control Center admins must use Control Center");
         }
-        if (plantId == null || !principal.getPlantIds().contains(plantId)) {
+    }
+
+    public void assertCanAccessPlant(UserPrincipal principal, Long plantId) {
+        assertPlantAppUser(principal);
+        if (plantId == null || !resolveAccessiblePlantIds(principal).contains(plantId)) {
             throw new AccessDeniedException("You do not have access to this plant");
         }
     }
@@ -55,10 +58,8 @@ public class PlantAccessService {
 
     @Transactional(readOnly = true)
     public List<Long> resolveAccessiblePlantIds(UserPrincipal principal) {
-        if (isSuperAdmin(principal)) {
-            return plantRepository.findAll().stream()
-                    .map(Plant::getPlantId)
-                    .collect(Collectors.toList());
+        if (isControlCenterAdmin(principal)) {
+            return List.of();
         }
         return userRepository.findById(principal.getId())
                 .map(user -> user.getAssignedPlants().stream()
@@ -77,5 +78,10 @@ public class PlantAccessService {
                         .map(SensorNode::getNodeId)
                         .collect(Collectors.toList()))
                 .orElse(principal.getNodeIds() != null ? principal.getNodeIds() : List.of());
+    }
+
+    private boolean hasRole(UserPrincipal principal, String role) {
+        return principal.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(role));
     }
 }

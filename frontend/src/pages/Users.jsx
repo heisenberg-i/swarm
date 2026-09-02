@@ -10,7 +10,7 @@ import { userAPI, plantAPI, sensorAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { SENSOR_LABELS, HARDWARE_PRESETS, getSensorTypesForPlant } from '../utils/constants';
 
-const ROLES = ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'];
+const ROLES = ['PLANT_ADMIN', 'OPERATOR'];
 const emptyForm = { name: '', email: '', mobile: '', password: '', role: 'OPERATOR', plantIds: [], nodeIds: [] };
 const emptySensorForm = {
   nodeName: '', sensorType: 'TEMPERATURE', firmwareVersion: 'v2.1.0',
@@ -369,7 +369,7 @@ export default function Users({ embedded = false, filterPlantId }) {
                         <CheckCircle />
                       </IconButton>
                     )}
-                    {isSuperAdmin && (
+                    {isSuperAdmin && u.role !== 'SUPER_ADMIN' && (
                       <IconButton size="small" color="error" onClick={() => userAPI.delete(u.id).then(loadUsers)} title="Delete">
                         <Delete />
                       </IconButton>

@@ -41,7 +41,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-biopower123}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.rpi}
       MQTT_ENABLED: "false"
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,https://app.swarm.co.in,capacitor://localhost}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,https://app.swarm.co.in,https://control.swarm.co.in,capacitor://localhost}
       IDENTITY_MODE: ${IDENTITY_MODE:-local}
       SAAS_ACCOUNTS_URL: ${SAAS_ACCOUNTS_URL:-https://accounts.empowerapp.in}
       SAAS_CLIENT_ID: ${SAAS_CLIENT_ID:-swarm_webapp}

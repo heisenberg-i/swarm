@@ -35,5 +35,8 @@ public class CustomUserDetailsService implements UserDetailsService {
     private void initializeAssignments(User user) {
         user.getAssignedPlants().size();
         user.getAssignedSensorNodes().size();
+        if (user.getCompany() != null) {
+            user.getCompany().getId();
+        }
     }
 }

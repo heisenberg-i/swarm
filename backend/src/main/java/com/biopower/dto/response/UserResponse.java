@@ -19,5 +19,6 @@ public class UserResponse {
     private UserStatus status;
     private List<Long> plantIds;
     private List<Long> nodeIds;
+    private Long companyId;
     private LocalDateTime createdAt;
 }

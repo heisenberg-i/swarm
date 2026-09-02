@@ -3,6 +3,7 @@ package com.biopower.service;
 import com.biopower.dto.request.PlantRequest;
 import com.biopower.dto.response.PlantResponse;
 import com.biopower.exception.ResourceNotFoundException;
+import com.biopower.model.entity.Company;
 import com.biopower.model.entity.Plant;
 import com.biopower.model.enums.AlertStatus;
 import com.biopower.model.enums.HealthStatus;
@@ -11,6 +12,7 @@ import com.biopower.model.enums.PlantStatus;
 import com.biopower.model.enums.SensorType;
 import com.biopower.repository.AiRecommendationRepository;
 import com.biopower.repository.AlertRepository;
+import com.biopower.repository.CompanyRepository;
 import com.biopower.repository.PlantRepository;
 import com.biopower.repository.SensorNodeRepository;
 import com.biopower.repository.UserRepository;
@@ -34,6 +36,7 @@ public class PlantService {
     private final AlertRepository alertRepository;
     private final AiRecommendationRepository aiRecommendationRepository;
     private final UserRepository userRepository;
+    private final CompanyRepository companyRepository;
     private final PlantAccessService plantAccessService;
 
     @Transactional(readOnly = true)
@@ -63,6 +66,7 @@ public class PlantService {
                 .feedstockType(request.getFeedstockType())
                 .installationDate(request.getInstallationDate())
                 .status(request.getStatus() != null ? request.getStatus() : PlantStatus.ACTIVE)
+                .company(resolveCreatorCompany(principal))
                 .enabledSensorTypes(plantAccessService.isSuperAdmin(principal)
                         ? PlantSensorTypes.serialize(Set.copyOf(PlantSensorTypes.parseList(request.getEnabledSensorTypes())))
                         : null)
@@ -72,11 +76,18 @@ public class PlantService {
         return toResponse(plant);
     }
 
+    private Company resolveCreatorCompany(UserPrincipal principal) {
+        if (principal == null || principal.getCompanyId() == null) {
+            return null;
+        }
+        return companyRepository.findById(principal.getCompanyId()).orElse(null);
+    }
+
     private void assignPlantToCreator(Plant plant, UserPrincipal principal) {
-        if (principal == null || plantAccessService.isSuperAdmin(principal)) {
+        if (principal == null || plantAccessService.isControlCenterAdmin(principal)) {
             return;
         }
-        if (!plantAccessService.isPlantAdmin(principal)) {
+        if (!plantAccessService.isSuperAdmin(principal) && !plantAccessService.isPlantAdmin(principal)) {
             return;
         }
         userRepository.findById(principal.getId()).ifPresent(user -> {
@@ -140,6 +151,8 @@ public class PlantService {
                 .healthStatus(healthStatus)
                 .enabledSensorTypes(PlantSensorTypes.parse(plant.getEnabledSensorTypes()).stream()
                         .map(SensorType::name).collect(Collectors.toList()))
+                .companyId(plant.getCompany() != null ? plant.getCompany().getId() : null)
+                .companyName(plant.getCompany() != null ? plant.getCompany().getName() : null)
                 .createdAt(plant.getCreatedAt())
                 .build();
     }
@@ -153,10 +166,6 @@ public class PlantService {
     }
 
     private void assertCanManagePlant(UserPrincipal principal, Long plantId) {
-        boolean isSuperAdmin = principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
-        if (!isSuperAdmin && !principal.getPlantIds().contains(plantId)) {
-            throw new AccessDeniedException("You cannot manage this plant");
-        }
+        plantAccessService.assertCanAccessPlant(principal, plantId);
     }
 }

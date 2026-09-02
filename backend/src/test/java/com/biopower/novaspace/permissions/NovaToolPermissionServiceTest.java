@@ -34,6 +34,6 @@ class NovaToolPermissionServiceTest {
     private UserPrincipal principal(String role, Long id) {
         return new UserPrincipal(id, "Test User", "test@example.com", "hash",
                 List.of(new SimpleGrantedAuthority("ROLE_" + role)),
-                true, List.of(1L), List.of());
+                true, List.of(1L), List.of(), null);
     }
 }

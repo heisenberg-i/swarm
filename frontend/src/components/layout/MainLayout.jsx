@@ -48,16 +48,14 @@ export default function MainLayout() {
   const [alertCount, setAlertCount] = useState(0);
 
   useEffect(() => {
-    notificationAPI.getAll()
+    if (user?.role === 'CONTROL_CENTER_ADMIN') return undefined;
+    const loadCount = () => notificationAPI.getAll()
       .then(({ data }) => setAlertCount(data.data?.counts?.active || 0))
       .catch(() => {});
-    const interval = setInterval(() => {
-      notificationAPI.getAll()
-        .then(({ data }) => setAlertCount(data.data?.counts?.active || 0))
-        .catch(() => {});
-    }, 60000);
+    loadCount();
+    const interval = setInterval(loadCount, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.role]);
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(user?.role));
   const currentPage = menuItems.find(item => item.path === location.pathname)?.text || 'Dashboard';

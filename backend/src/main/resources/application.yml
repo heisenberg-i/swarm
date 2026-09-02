@@ -60,7 +60,7 @@ biopower:
     pressure-max: 2.5
     sensor-timeout-minutes: 10
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,https://localhost,capacitor://localhost}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,https://localhost,capacitor://localhost,https://app.swarm.co.in,https://control.swarm.co.in}
   deployment:
     role: ${SWARM_DEPLOYMENT_ROLE:primary}
   retention:

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import MainLayout from './components/layout/MainLayout';
+import ControlCenterLayout from './components/control-center/ControlCenterLayout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthCallback from './pages/AuthCallback';
@@ -22,8 +23,13 @@ import ChangePassword from './pages/ChangePassword';
 import Help from './pages/Help';
 import NovaSpaceOp from './pages/NovaSpaceOp';
 import PlantHmi from './pages/PlantHmi';
+import Companies from './pages/control-center/Companies';
+import CompanyDetail from './pages/control-center/CompanyDetail';
+import PlantInventory from './pages/control-center/PlantInventory';
+import Overview from './pages/control-center/Overview';
+import Approvals from './pages/control-center/Approvals';
 import { isNativeApp } from './utils/networkError';
-import { getHomeRoute } from './utils/homeRoute';
+import { getHomeRoute, shouldShowControlCenter } from './utils/homeRoute';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user } = useAuth();
@@ -36,6 +42,7 @@ function App() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const home = user ? getHomeRoute(user.role) : '/dashboard';
+  const controlUi = shouldShowControlCenter(user);
 
   useEffect(() => {
     if (!isNativeApp()) return undefined;
@@ -94,26 +101,38 @@ function App() {
       <Route path="/signup" element={user ? <Navigate to={home} /> : <Signup />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
 
-      <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-        <Route index element={<Navigate to={home} replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="plant-hmi" element={<PlantHmi />} />
-        <Route path="plants" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Plants /></ProtectedRoute>} />
-        <Route path="sensors" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Sensors /></ProtectedRoute>} />
-        <Route path="connect-device" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR']}><ConnectDevice /></ProtectedRoute>} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="alerts" element={<Alerts />} />
-        <Route path="ai" element={<AIRecommendations />} />
-        <Route path="maintenance" element={<Maintenance />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="users" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Users /></ProtectedRoute>} />
-        <Route path="partners" element={<ProtectedRoute roles={['SUPER_ADMIN']}><Partners /></ProtectedRoute>} />
-        <Route path="settings" element={<ProtectedRoute roles={['SUPER_ADMIN']}><Settings /></ProtectedRoute>} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="change-password" element={<ChangePassword />} />
-        <Route path="help" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR']}><Help /></ProtectedRoute>} />
-        <Route path="nova-space-op" element={<NovaSpaceOp />} />
-      </Route>
+      {controlUi ? (
+        <Route path="/" element={<ProtectedRoute roles={['CONTROL_CENTER_ADMIN']}><ControlCenterLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="/overview" replace />} />
+          <Route path="overview" element={<Overview />} />
+          <Route path="companies" element={<Companies />} />
+          <Route path="companies/:id" element={<CompanyDetail />} />
+          <Route path="plants" element={<PlantInventory />} />
+          <Route path="approvals" element={<Approvals />} />
+          <Route path="change-password" element={<ChangePassword />} />
+        </Route>
+      ) : (
+        <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to={home} replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="plant-hmi" element={<PlantHmi />} />
+          <Route path="plants" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Plants /></ProtectedRoute>} />
+          <Route path="sensors" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Sensors /></ProtectedRoute>} />
+          <Route path="connect-device" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR']}><ConnectDevice /></ProtectedRoute>} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="alerts" element={<Alerts />} />
+          <Route path="ai" element={<AIRecommendations />} />
+          <Route path="maintenance" element={<Maintenance />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="users" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Users /></ProtectedRoute>} />
+          <Route path="partners" element={<ProtectedRoute roles={['SUPER_ADMIN']}><Partners /></ProtectedRoute>} />
+          <Route path="settings" element={<ProtectedRoute roles={['SUPER_ADMIN']}><Settings /></ProtectedRoute>} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="change-password" element={<ChangePassword />} />
+          <Route path="help" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR']}><Help /></ProtectedRoute>} />
+          <Route path="nova-space-op" element={<NovaSpaceOp />} />
+        </Route>
+      )}
       <Route path="*" element={<Navigate to={home} replace />} />
     </Routes>
   );

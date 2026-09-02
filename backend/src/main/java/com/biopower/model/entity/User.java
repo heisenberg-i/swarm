@@ -46,6 +46,10 @@ public class User {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_plants",

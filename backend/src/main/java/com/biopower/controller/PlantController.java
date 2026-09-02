@@ -3,9 +3,8 @@ package com.biopower.controller;
 import com.biopower.dto.request.PlantRequest;
 import com.biopower.dto.response.ApiResponse;
 import com.biopower.dto.response.PlantResponse;
-import com.biopower.model.entity.Plant;
-import com.biopower.repository.UserRepository;
 import com.biopower.security.UserPrincipal;
+import com.biopower.service.PlantAccessService;
 import com.biopower.service.PlantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,24 +21,20 @@ import java.util.List;
 public class PlantController {
 
     private final PlantService plantService;
-    private final UserRepository userRepository;
+    private final PlantAccessService plantAccessService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PlantResponse>>> getPlants(
             @AuthenticationPrincipal UserPrincipal principal) {
-        boolean isSuperAdmin = principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
-        if (isSuperAdmin) {
-            return ResponseEntity.ok(ApiResponse.success(plantService.getAllPlants()));
-        }
-        List<Long> plantIds = userRepository.findById(principal.getId())
-                .map(user -> user.getAssignedPlants().stream().map(Plant::getPlantId).toList())
-                .orElse(principal.getPlantIds());
+        List<Long> plantIds = plantAccessService.resolveAccessiblePlantIds(principal);
         return ResponseEntity.ok(ApiResponse.success(plantService.getPlantsForUser(plantIds, false)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PlantResponse>> getPlant(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<PlantResponse>> getPlant(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        plantAccessService.assertCanAccessPlant(principal, id);
         return ResponseEntity.ok(ApiResponse.success(plantService.getPlantById(id)));
     }
 
@@ -60,7 +55,10 @@ public class PlantController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deletePlant(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deletePlant(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        plantAccessService.assertCanAccessPlant(principal, id);
         plantService.deletePlant(id);
         return ResponseEntity.ok(ApiResponse.success("Plant deleted", null));
     }

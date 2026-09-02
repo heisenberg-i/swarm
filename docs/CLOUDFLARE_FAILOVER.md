@@ -73,6 +73,8 @@ For `app.swarm.co.in` (frontend):
 - **Option A:** Also failover (RPi nginx → Railway `app.swarm.co.in`)
 - **Option B:** Keep app on Railway until RPi frontend is ready
 
+Add the same origin for Control Center: `control.swarm.co.in` → same frontend container as `app.swarm.co.in`. See [CONTROL_CENTER.md](CONTROL_CENTER.md).
+
 ---
 
 ## 5. ESP stable hostname

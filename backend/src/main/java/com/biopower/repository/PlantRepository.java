@@ -1,5 +1,6 @@
 package com.biopower.repository;
 
+import com.biopower.model.entity.Company;
 import com.biopower.model.entity.Plant;
 import com.biopower.model.enums.PlantStatus;
 import com.biopower.model.enums.PlantType;
@@ -13,4 +14,6 @@ public interface PlantRepository extends JpaRepository<Plant, Long> {
     List<Plant> findByStatus(PlantStatus status);
     List<Plant> findByPlantType(PlantType plantType);
     List<Plant> findByPlantIdIn(List<Long> plantIds);
+    List<Plant> findByCompany(Company company);
+    List<Plant> findByCompanyIsNull();
 }

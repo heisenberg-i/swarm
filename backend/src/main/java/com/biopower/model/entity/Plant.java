@@ -47,6 +47,10 @@ public class Plant {
     @Builder.Default
     private PlantStatus status = PlantStatus.ACTIVE;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     /** Comma-separated SensorType names enabled for this SaaS project/plant dashboard. */
     @Column(name = "enabled_sensor_types", length = 1000)
     private String enabledSensorTypes;

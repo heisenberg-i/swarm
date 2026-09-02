@@ -82,12 +82,16 @@ export default function Signup() {
       return;
     }
     try {
-      await signup({
+      const result = await signup({
         name: form.name.trim(),
         email: form.email.trim(),
         mobile: form.mobile.trim() || undefined,
         password: form.password,
       });
+      if (result?.pending) {
+        navigate('/login', { state: { pendingApproval: true } });
+        return;
+      }
       navigate('/dashboard');
     } catch (err) {
       const networkMsg = networkErrorMessage(err);

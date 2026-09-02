@@ -28,6 +28,7 @@ public class SensorNodeService {
     private final SensorNodeRepository sensorNodeRepository;
     private final SensorReadingRepository sensorReadingRepository;
     private final PlantService plantService;
+    private final PlantAccessService plantAccessService;
 
     @Transactional(readOnly = true)
     public List<SensorNodeResponse> getAllNodes(UserPrincipal principal) {
@@ -127,27 +128,18 @@ public class SensorNodeService {
     }
 
     private List<SensorNode> filterNodesForPrincipal(List<SensorNode> nodes, UserPrincipal principal) {
-        if (isSuperAdmin(principal)) {
-            return nodes;
-        }
+        List<Long> allowed = plantAccessService.resolveAccessiblePlantIds(principal);
         return nodes.stream()
-                .filter(node -> principal.getPlantIds().contains(node.getPlant().getPlantId()))
+                .filter(node -> allowed.contains(node.getPlant().getPlantId()))
                 .collect(Collectors.toList());
     }
 
-    private boolean isSuperAdmin(UserPrincipal principal) {
-        return principal.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
-    }
-
     private void assertCanManagePlant(UserPrincipal principal, Long plantId) {
-        if (!isSuperAdmin(principal) && !principal.getPlantIds().contains(plantId)) {
-            throw new AccessDeniedException("You cannot manage sensors for this plant");
-        }
+        plantAccessService.assertCanAccessPlant(principal, plantId);
     }
 
     private void assertSuperAdmin(UserPrincipal principal) {
-        if (!isSuperAdmin(principal)) {
+        if (!plantAccessService.isSuperAdmin(principal)) {
             throw new AccessDeniedException("Only super admin can manage sensor hardware");
         }
     }

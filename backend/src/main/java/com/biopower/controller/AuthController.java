@@ -57,9 +57,10 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<AuthResponse>> signup(@Valid @RequestBody SignupRequest request) {
+    public ResponseEntity<ApiResponse<Void>> signup(@Valid @RequestBody SignupRequest request) {
+        authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Account created successfully", authService.signup(request)));
+                .body(ApiResponse.success("Registration received. Wait for Control Center approval before signing in.", null));
     }
 
     @PostMapping("/logout")

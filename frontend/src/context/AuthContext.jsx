@@ -8,9 +8,10 @@ const toUserData = (authData) => ({
   id: authData.id,
   name: authData.name,
   email: authData.email,
-  role: authData.role,
+  role: String(authData.role || '').replace(/^ROLE_/, ''),
   plantIds: (authData.plantIds || []).map(Number),
   nodeIds: (authData.nodeIds || []).map(Number),
+  companyId: authData.companyId || null,
 });
 
 export const useAuth = () => {
@@ -61,6 +62,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await authAPI.signup(payload);
       const authData = data.data;
+      if (!authData?.token) {
+        return { pending: true };
+      }
       localStorage.setItem('token', authData.token);
       return persistUser(toUserData(authData));
     } finally {
@@ -80,6 +84,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  const isControlCenterAdmin = user?.role === 'CONTROL_CENTER_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isPlantAdmin = user?.role === 'PLANT_ADMIN';
   const isOperator = user?.role === 'OPERATOR';
@@ -89,7 +94,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       user, login, loginWithSsoCode, signup, logout, refreshUser, loading,
-      isSuperAdmin, isPlantAdmin, isOperator,
+      isControlCenterAdmin, isSuperAdmin, isPlantAdmin, isOperator,
       canManagePlants, canManageUsers,
     }}>
       {children}

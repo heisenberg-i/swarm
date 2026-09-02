@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box, Card, CardContent, TextField, Button, Typography, Alert,
   InputAdornment, IconButton, Link, CircularProgress, Divider,
@@ -49,6 +49,13 @@ export default function Login() {
   const [ssoAvailable, setSsoAvailable] = useState(false);
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.pendingApproval) {
+      setSuccess('Registration received. Control Center must approve your account before you can sign in.');
+    }
+  }, [location.state]);
 
   useEffect(() => {
     loadSsoConfig()

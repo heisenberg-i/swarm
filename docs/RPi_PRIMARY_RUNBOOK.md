@@ -84,8 +84,10 @@ Preferred over port-forwarding for RPi primary.
 2. Create tunnel in Cloudflare Zero Trust dashboard.
 3. Route hostnames:
    - `api.swarm.co.in` → `http://localhost:8080` (backend)
-   - `app.swarm.co.in` → `http://localhost:80` (frontend) — or keep app on Railway until cutover
+   - `app.swarm.co.in` → `http://localhost:80` (frontend)
+   - `control.swarm.co.in` → `http://localhost:80` (same frontend — Control Center)
 4. Ensure `SWARM_PUBLIC_API_URL` and `VITE_API_URL` use `https://api.swarm.co.in/api`.
+5. Add `https://control.swarm.co.in` to `CORS_ORIGINS`. See [CONTROL_CENTER.md](CONTROL_CENTER.md).
 
 See [CLOUDFLARE_FAILOVER.md](CLOUDFLARE_FAILOVER.md) for health checks and failover pools.
 

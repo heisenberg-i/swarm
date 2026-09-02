@@ -16,7 +16,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+    const isPublicAuth = /\/auth\/(login|signup|sso|forgot-password)/.test(url);
+    if (status === 401 && !isPublicAuth && localStorage.getItem('token')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       if (window.location.pathname !== '/login') {
@@ -84,6 +87,10 @@ export const alertAPI = {
   resolve: (id) => api.patch(`/alerts/${id}/resolve`),
 };
 
+export const notificationAPI = {
+  getAll: () => api.get('/notifications'),
+};
+
 export const aiAPI = {
   getRecommendations: (plantId) => api.get(`/ai/recommendations/${plantId}`),
   acknowledge: (id) => api.patch(`/ai/recommendations/${id}/acknowledge`),
@@ -120,8 +127,23 @@ export const partnerAPI = {
   revokeApiKey: (id) => api.delete(`/admin/partner/api-keys/${id}`),
 };
 
-export const notificationAPI = {
-  getAll: () => api.get('/notifications'),
+export const controlCenterAPI = {
+  listCompanies: () => api.get('/control-center/companies'),
+  createCompany: (data) => api.post('/control-center/companies', data),
+  getCompany: (id) => api.get(`/control-center/companies/${id}`),
+  disableCompany: (id) => api.patch(`/control-center/companies/${id}/disable`),
+  enableCompany: (id) => api.patch(`/control-center/companies/${id}/enable`),
+  createSuperAdmin: (id, data) => api.post(`/control-center/companies/${id}/super-admin`, data),
+  assignPlants: (id, data) => api.put(`/control-center/companies/${id}/plants`, data),
+  listPlants: () => api.get('/control-center/plants'),
+  listUnassignedPlants: () => api.get('/control-center/plants/unassigned'),
+  createPlant: (data) => api.post('/control-center/plants', data),
+  overview: () => api.get('/control-center/overview'),
+  listUsers: (queue = 'pending') => api.get('/control-center/users', { params: { queue } }),
+  approveUser: (id, data) => api.post(`/control-center/users/${id}/approve`, data),
+  rejectUser: (id) => api.post(`/control-center/users/${id}/reject`),
+  deleteUser: (id) => api.delete(`/control-center/users/${id}`),
+  deleteCompany: (id) => api.delete(`/control-center/companies/${id}`),
 };
 
 export const hmiAPI = {

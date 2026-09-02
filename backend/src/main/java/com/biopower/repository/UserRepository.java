@@ -1,6 +1,8 @@
 package com.biopower.repository;
 
+import com.biopower.model.entity.Company;
 import com.biopower.model.entity.User;
+import com.biopower.model.enums.UserRole;
 import com.biopower.model.enums.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,4 +16,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByIdentityUserId(String identityUserId);
     boolean existsByEmail(String email);
     List<User> findByStatus(UserStatus status);
+    List<User> findByCompany(Company company);
+    Optional<User> findByCompanyAndRole(Company company, UserRole role);
+    List<User> findByRole(UserRole role);
+    long countByCompany(Company company);
 }

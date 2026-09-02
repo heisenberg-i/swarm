@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Removes legacy demo plants/users and ensures the platform SUPER_ADMIN exists.
+ * Removes legacy demo plants/users and ensures the Control Center admin exists.
  */
 @Component
 @Order(1)
@@ -110,31 +110,28 @@ public class ProductionDataCleanup implements CommandLineRunner {
     }
 
     private void ensurePlatformAdmin(boolean setPassword) {
-        List<Plant> allPlants = plantRepository.findAll();
-        Set<Plant> plantAssignments = new HashSet<>(allPlants);
-
         userRepository.findByEmail(PLATFORM_ADMIN_EMAIL).ifPresentOrElse(user -> {
-            user.setRole(UserRole.SUPER_ADMIN);
+            user.setRole(UserRole.CONTROL_CENTER_ADMIN);
             user.setStatus(UserStatus.ACTIVE);
             user.setName("SWARM Admin");
+            user.setCompany(null);
             user.getAssignedPlants().clear();
-            user.getAssignedPlants().addAll(plantAssignments);
             if (setPassword) {
                 user.setPassword(passwordEncoder.encode(PLATFORM_ADMIN_PASSWORD));
             }
             userRepository.save(user);
-            log.info("Platform admin updated: {}", PLATFORM_ADMIN_EMAIL);
+            log.info("Control Center admin updated: {}", PLATFORM_ADMIN_EMAIL);
         }, () -> {
             User admin = User.builder()
                     .name("SWARM Admin")
                     .email(PLATFORM_ADMIN_EMAIL)
                     .password(passwordEncoder.encode(PLATFORM_ADMIN_PASSWORD))
-                    .role(UserRole.SUPER_ADMIN)
+                    .role(UserRole.CONTROL_CENTER_ADMIN)
                     .status(UserStatus.ACTIVE)
-                    .assignedPlants(plantAssignments)
+                    .assignedPlants(new HashSet<>())
                     .build();
             userRepository.save(admin);
-            log.info("Platform admin created: {}", PLATFORM_ADMIN_EMAIL);
+            log.info("Control Center admin created: {}", PLATFORM_ADMIN_EMAIL);
         });
     }
 

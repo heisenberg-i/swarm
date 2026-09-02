@@ -109,13 +109,18 @@ public class AuthService {
         if (isSaasFullyConfigured()) {
             throw new BadRequestException("Use emPOWER SaaS login at accounts.empowerapp.in");
         }
+        userRepository.findByEmail(request.getEmail().trim()).ifPresent(user -> {
+            if (user.getStatus() == UserStatus.PENDING) {
+                throw new BadRequestException("Your account is waiting for Control Center approval");
+            }
+        });
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
         return toAuthResponse(authentication);
     }
 
     @Transactional
-    public AuthResponse signup(SignupRequest request) {
+    public void signup(SignupRequest request) {
         if (isSaasFullyConfigured()) {
             throw new BadRequestException("Use emPOWER SaaS signup at accounts.empowerapp.in");
         }
@@ -130,16 +135,11 @@ public class AuthService {
                 .mobile(request.getMobile() != null ? request.getMobile().trim() : null)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.OPERATOR)
-                .status(UserStatus.ACTIVE)
+                .status(UserStatus.PENDING)
                 .assignedPlants(new HashSet<>())
                 .assignedSensorNodes(new HashSet<>())
                 .build();
-        user = userRepository.save(user);
-
-        UserPrincipal principal = UserPrincipal.create(user);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                principal, null, principal.getAuthorities());
-        return toAuthResponse(authentication);
+        userRepository.save(user);
     }
 
     private AuthResponse toAuthResponse(Authentication authentication) {
@@ -156,6 +156,7 @@ public class AuthService {
                         principal.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "")))
                 .plantIds(principal.getPlantIds())
                 .nodeIds(principal.getNodeIds())
+                .companyId(principal.getCompanyId())
                 .build();
     }
 
@@ -169,6 +170,7 @@ public class AuthService {
                         principal.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "")))
                 .plantIds(principal.getPlantIds())
                 .nodeIds(principal.getNodeIds())
+                .companyId(principal.getCompanyId())
                 .build();
     }
 

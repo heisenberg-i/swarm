@@ -17,4 +17,5 @@ public class AuthResponse {
     private UserRole role;
     private List<Long> plantIds;
     private List<Long> nodeIds;
+    private Long companyId;
 }
