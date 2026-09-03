@@ -21,7 +21,7 @@ railway_api_require_token() {
 
 railway_api_graphql() {
   local query="$1"
-  local variables="${2:-{}}"
+  local variables="${2:-"{}"}"
   local dry_run="${3:-false}"
   if [[ "${dry_run}" == "true" ]]; then
     railway_api_log "DRY-RUN GraphQL"

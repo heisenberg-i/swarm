@@ -127,7 +127,7 @@ def build():
     pdf.multi_cell(
         0,
         5,
-        "Reference deployment: Tata Steel West Bokaro Biomethanation Plant\n"
+        "Reference deployment: biomethanation P&ID plant\n"
         "Production: https://app.swarm.co.in",
         align="C",
     )
@@ -222,7 +222,7 @@ def build():
     # 4 HMI workflow
     pdf.section_title("4. Plant HMI Workflow")
     pdf.body(
-        "The Plant HMI at /plant-hmi shows the Tata Steel West Bokaro biomethanation "
+        "The Plant HMI at /plant-hmi shows the biomethanation "
         "process flow diagram with 8 equipment control blocks."
     )
     pdf.sub_title("Operator workflow")
@@ -361,25 +361,21 @@ def build():
     pdf.sub_title("Production")
     pdf.bullet("App: https://app.swarm.co.in")
     pdf.bullet("Plant HMI: https://app.swarm.co.in/plant-hmi")
-    pdf.sub_title("Tata Steel demo plant")
+    pdf.sub_title("Demo plant")
     pdf.table(
         ["Role", "Email", "Password"],
         [
-            ["Super Admin", "swarm.nfi@gmail.com", "Swarm@2026"],
-            ["Plant Admin", "tata.admin@tatasteel.com", "TataSteel@2026"],
-            ["Operator", "tata.operator@tatasteel.com", "TataSteel@2026"],
+            ["Control Center Admin", "swarm.nfi@gmail.com", "Swarm@2026"],
         ],
-        [40, 80, 70],
+        [55, 80, 55],
     )
     pdf.sub_title("Local dev")
     pdf.table(
         ["Role", "Email", "Password"],
         [
-            ["Super Admin", "swarm.nfi@gmail.com", "Swarm@2026"],
-            ["Plant Admin", "tata.admin@tatasteel.com", "TataSteel@2026"],
-            ["Operator", "tata.operator@tatasteel.com", "TataSteel@2026"],
+            ["Control Center Admin", "swarm.nfi@gmail.com", "Swarm@2026"],
         ],
-        [40, 80, 70],
+        [55, 80, 55],
     )
 
     # 10 Structure

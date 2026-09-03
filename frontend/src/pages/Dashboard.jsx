@@ -9,7 +9,7 @@ import {
 import {
   Opacity, Thermostat, Speed, Air, LocalFireDepartment,
   Co2, Warning, Science, BluetoothConnected, Refresh,
-  PrecisionManufacturing, ArrowForward,
+  PrecisionManufacturing, ArrowForward, ContentCopy,
 } from '@mui/icons-material';
 import { plantAPI, dashboardAPI, alertAPI, deviceAPI, hmiAPI } from '../services/api';
 import { fetchEspStatus } from '../utils/espClient';
@@ -135,6 +135,15 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
     }
   };
 
+  const copyDeviceIp = async (ip) => {
+    if (!ip) return;
+    try {
+      await navigator.clipboard.writeText(ip);
+    } catch {
+      window.alert(ip);
+    }
+  };
+
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
 
   const readings = dashboard?.currentReadings || {};
@@ -207,7 +216,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
 
       {!hmiState && selectedPlant && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          P&ID HMI is available for plants with P&ID configuration (e.g. Tata Steel West Bokaro).
+          P&ID HMI is available for plants with P&ID configuration (biomethanation / P&ID feedstock).
         </Alert>
       )}
 
@@ -283,7 +292,27 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
                   <TableRow key={device.chipId} hover>
                     <TableCell>
                       <Typography fontWeight={600}>{device.deviceName}</Typography>
-                      <Typography variant="caption" color="text.secondary">{device.deviceIp || 'IP not saved'}</Typography>
+                      {device.deviceIp ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary" fontFamily="monospace">
+                            {device.deviceIp}
+                          </Typography>
+                          <Tooltip title="Copy IP">
+                            <IconButton size="small" onClick={() => copyDeviceIp(device.deviceIp)}>
+                              <ContentCopy sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Open hub /info">
+                            <IconButton size="small" component="a" href={`http://${device.deviceIp}/info`} target="_blank" rel="noreferrer">
+                              <ArrowForward sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          IP not saved yet — pair on Connect Device or wait for hub data
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>{device.plantName || '--'}</TableCell>
                     <TableCell>

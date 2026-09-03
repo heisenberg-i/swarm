@@ -29,7 +29,7 @@ POST /api/admin/partner/organizations
 Authorization: Bearer <super_admin_jwt>
 
 {
-  "name": "Tata Steel Jamshedpur",
+  "name": "Customer plant site",
   "externalOrgId": "<emPOWER_organization_uuid>",
   "plantIds": [1]
 }

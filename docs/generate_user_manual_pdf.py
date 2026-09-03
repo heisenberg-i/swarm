@@ -162,15 +162,13 @@ def build():
     pdf.numbered(1, "Click Forgot Password? on the login page.")
     pdf.numbered(2, "Enter your registered email.")
     pdf.numbered(3, "Check your email for reset instructions.")
-    pdf.sub_title("Demo credentials (Tata Steel plant)")
+    pdf.sub_title("Demo credentials")
     pdf.table(
         ["Role", "Email", "Password"],
         [
-            ["Super Admin", "swarm.nfi@gmail.com", "Swarm@2026"],
-            ["Plant Admin", "tata.admin@tatasteel.com", "TataSteel@2026"],
-            ["Operator", "tata.operator@tatasteel.com", "TataSteel@2026"],
+            ["Control Center Admin", "swarm.nfi@gmail.com", "Swarm@2026"],
         ],
-        [40, 80, 70],
+        [55, 80, 55],
     )
 
     # 2
@@ -186,8 +184,8 @@ def build():
     pdf.add_page()
     pdf.section_title("3. Plant HMI")
     pdf.body(
-        "The Plant HMI is the interactive process flow diagram (PFD) for the Tata Steel West Bokaro "
-        "biomethanation plant. It shows equipment status, live instrument readings, animated pipeline "
+        "The Plant HMI is the interactive process flow diagram (PFD) for the biomethanation "
+        "plant. It shows equipment status, live instrument readings, animated pipeline "
         "flow, and block-level start/stop controls."
     )
     pdf.note(

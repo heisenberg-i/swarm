@@ -54,7 +54,7 @@ function SchematicCanvas({ diagramUrl, equipment, hotspots, plantPowered, zoom, 
       setLoadError('');
       return;
     }
-    setLoadError('Could not load P&ID image. Open /hmi/tata-steel-pid.png in a new tab, then hard-refresh this page (Ctrl+Shift+R).');
+    setLoadError('Could not load P&ID image. Hard-refresh this page (Ctrl+Shift+R).');
   };
 
   return (

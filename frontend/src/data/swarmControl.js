@@ -6,7 +6,7 @@
 export const SWARM_PLATFORM = {
   name: 'SWARM',
   tagline: 'Industrial IoT control, reporting & AI platform expilization',
-  subtitle: 'Tata Steel West Bokaro — 600 kg/day biomethanation',
+  subtitle: 'West Bokaro — 600 kg/day biomethanation',
   document: 'SWM-TSL-WBK-RSIP-001 Rev.1',
   pid: 'Biogas Plant PFD — block diagram HMI',
   hmiNote: 'swarm-hmi displays state — control logic runs in swarm-control on SWARM Core',

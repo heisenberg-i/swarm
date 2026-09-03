@@ -2,7 +2,7 @@
 
 **Status:** Implemented (simulation mode)  
 **Route:** `/plant-hmi`  
-**Target plant:** Tata Steel West Bokaro Biomethanation Plant (P&ID V4 15Apr)
+**Target plant:** Biomethanation P&ID plant (P&ID V4 15Apr)
 
 ---
 
@@ -97,12 +97,12 @@ Values refresh every **8 seconds** on the HMI page.
 
 ## P&ID drawing asset
 
-**Current:** Schematic SVG at `frontend/public/hmi/tata-steel-pid.svg`
+**Current:** Schematic SVG in `frontend/public/hmi/` (P&ID drawing)
 
 **To use your official P&ID drawing:**
 
 1. Export as PNG or SVG (high resolution)
-2. Save to `frontend/public/hmi/tata-steel-pid.png` (or `.svg`)
+2. Save to `frontend/public/hmi/` (PNG or SVG)
 3. Update hotspot coordinates in backend seed (`HmiEquipmentSeeder.java`) or via DB `hmi_equipment.hotspot_*` columns
 4. Percentage-based coordinates (0–100) align with the overlay in `PidDiagram.jsx`
 
@@ -114,7 +114,7 @@ Values refresh every **8 seconds** on the HMI page.
 - `hmi_equipment_state` — simulated powered/running state
 - `hmi_plant_state` — plant power + auto-sequence
 
-Seeded automatically for plants whose feedstock references `P&ID` (Tata Steel demo).
+Seeded automatically for plants whose feedstock references `P&ID`.
 
 ---
 
@@ -122,9 +122,7 @@ Seeded automatically for plants whose feedstock references `P&ID` (Tata Steel de
 
 | Role | Email | Password |
 |------|-------|----------|
-| Super Admin | swarm.nfi@gmail.com | Swarm@2026 |
-| Plant Admin | tata.admin@tatasteel.com | TataSteel@2026 |
-| Operator | tata.operator@tatasteel.com | TataSteel@2026 |
+| Control Center Admin | swarm.nfi@gmail.com | Swarm@2026 |
 
 ---
 
@@ -149,5 +147,5 @@ backend/
 frontend/
   src/pages/PlantHmi.jsx
   src/components/hmi/
-  public/hmi/tata-steel-pid.svg
+  public/hmi/
 ```

@@ -254,7 +254,7 @@ export default function Help() {
         <Typography fontWeight={600} sx={{ mb: 1 }}>Open the HMI</Typography>
         <List dense>
           <ListItem><ListItemText primary="Sidebar → Plant HMI (or /plant-hmi)" /></ListItem>
-          <ListItem><ListItemText primary="Select the Tata Steel / P&ID plant from the dropdown if prompted." /></ListItem>
+          <ListItem><ListItemText primary="Select the P&ID biomethanation plant from the dropdown if prompted." /></ListItem>
         </List>
 
         <Typography fontWeight={600} sx={{ mt: 2, mb: 1 }}>Master bus (Plant Admin / Super Admin)</Typography>

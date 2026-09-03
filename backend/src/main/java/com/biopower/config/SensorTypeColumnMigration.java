@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * MySQL ENUM columns for sensor_type reject newer values (e.g. TEMPERATURE_TRANSMITTER).
- * Migrate to VARCHAR so Tata Steel demo seeding works on Railway.
+ * Migrate to VARCHAR so P&amp;ID demo seeding works on Railway.
  */
 @Component
 @Order(0)

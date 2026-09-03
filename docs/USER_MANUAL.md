@@ -43,13 +43,11 @@ In the web app, open **User Manual** in the sidebar (`/help`). Content is filter
 2. Enter your registered email.
 3. Check your email for reset instructions.
 
-### Demo credentials (Tata Steel plant)
+### Demo credentials
 
 | Role | Email | Password |
 |------|-------|----------|
-| Super Admin | swarm.nfi@gmail.com | Swarm@2026 |
-| Plant Admin | tata.admin@tatasteel.com | TataSteel@2026 |
-| Operator | tata.operator@tatasteel.com | TataSteel@2026 |
+| Control Center Admin | swarm.nfi@gmail.com | Swarm@2026 |
 
 ---
 
@@ -68,7 +66,7 @@ Select a plant from the dropdown to switch between sites.
 
 ## 3. Plant HMI
 
-The **Plant HMI** is the interactive process flow diagram (PFD) for the Tata Steel West Bokaro biomethanation plant. It shows equipment status, live instrument readings, animated pipeline flow, and block-level start/stop controls.
+The **Plant HMI** is the interactive process flow diagram (PFD) for a biomethanation plant. It shows equipment status, live instrument readings, animated pipeline flow, and block-level start/stop controls.
 
 > **Simulation mode:** Commands update server-side HMI state. They do not drive real PLCs or field pumps until Phase 3 field integration.
 

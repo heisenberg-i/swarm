@@ -82,7 +82,7 @@ mysql_sync_log "=== Daily Railway sync starting ==="
 railway_api_wake_service "${RAILWAY_MYSQL_SERVICE_ID}" "${RAILWAY_ENVIRONMENT_ID}" "${DRY_RUN}"
 
 if [[ "${DRY_RUN}" != "true" ]]; then
-  mysql_sync_wait_tcp 60 5
+  mysql_sync_wait_mysql 60 5
 fi
 
 mysql_sync_restore_railway "${DRY_RUN}"

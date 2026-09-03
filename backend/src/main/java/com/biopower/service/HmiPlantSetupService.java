@@ -76,7 +76,7 @@ public class HmiPlantSetupService {
       return true;
     }
     String name = plant.getPlantName() != null ? plant.getPlantName().toLowerCase() : "";
-    return name.contains("biomethanation") || name.contains("tata steel");
+    return name.contains("biomethanation");
   }
 
   private void seedForPlant(Plant plant) {

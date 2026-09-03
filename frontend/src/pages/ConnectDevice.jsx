@@ -4,8 +4,8 @@ import {
   Box, Typography, Button, Card, CardContent, TextField, MenuItem,
   Stepper, Step, StepLabel, Alert, Chip, Grid, CircularProgress, useMediaQuery, useTheme,
 } from '@mui/material';
-import { BluetoothConnected, CheckCircle, Error as ErrorIcon } from '@mui/icons-material';
-import { deviceAPI, plantAPI, userAPI } from '../services/api';
+import { BluetoothConnected, CheckCircle, Error as ErrorIcon, ContentCopy } from '@mui/icons-material';
+import { deviceAPI, plantAPI, userAPI, sensorAPI } from '../services/api';
 import { fetchEspInfo, fetchEspStatus, configureEsp } from '../utils/espClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -47,6 +47,8 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
   const [espInfo, setEspInfo] = useState(null);
   const [espStatus, setEspStatus] = useState(null);
   const [pairResult, setPairResult] = useState(null);
+  const [knownHubs, setKnownHubs] = useState([]);
+  const [copiedIp, setCopiedIp] = useState('');
 
   useEffect(() => {
     if (fixedPlantId) {
@@ -58,6 +60,25 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
     deviceAPI.getSwarmUrl()
       .then(({ data }) => setSwarmUrl(data.data || ''))
       .catch(() => {});
+    sensorAPI.getAll()
+      .then(({ data }) => {
+        const nodes = data.data || [];
+        const byChip = new Map();
+        nodes.forEach((n) => {
+          const chip = (n.deviceChipId || '').trim();
+          if (!chip) return;
+          const existing = byChip.get(chip) || {
+            chipId: chip,
+            plantName: n.plantName,
+            deviceIp: n.deviceIp,
+          };
+          if (n.deviceIp) existing.deviceIp = n.deviceIp;
+          if (n.plantName) existing.plantName = n.plantName;
+          byChip.set(chip, existing);
+        });
+        setKnownHubs([...byChip.values()]);
+      })
+      .catch(() => setKnownHubs([]));
   }, [fixedPlantId]);
 
   useEffect(() => {
@@ -178,6 +199,23 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
 
   const healthColor = (h) => (h === 'OK' ? 'success' : h === 'WARNING' ? 'warning' : 'error');
 
+  const useHubIp = (ip) => {
+    if (!ip) return;
+    setEspIp(ip);
+    setError('');
+  };
+
+  const copyIp = async (ip) => {
+    if (!ip) return;
+    try {
+      await navigator.clipboard.writeText(ip);
+      setCopiedIp(ip);
+      setTimeout(() => setCopiedIp(''), 2000);
+    } catch {
+      setError(`Copy failed. Select the IP and copy it: ${ip}`);
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
@@ -190,9 +228,85 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
       </Typography>
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        If the ESP cannot join Wi‑Fi, join hotspot <strong>SWARM-Setup-{'{chipId}'}</strong> (password = Device Unique ID),
-        open <strong>http://192.168.4.1/setup</strong>, then use IP <strong>192.168.4.1</strong> here.
+        <Typography fontWeight={600} sx={{ mb: 1 }}>How to find the ESP IP</Typography>
+        <Typography variant="body2" component="div">
+          <ol style={{ margin: 0, paddingLeft: 18 }}>
+            <li>
+              <strong>Already paired?</strong> Use a hub below, or open Dashboard → Paired Devices.
+              After the hub sends data, Swarm saves the IP automatically.
+            </li>
+            <li>
+              <strong>New hub / Wi‑Fi failed?</strong> On your phone join Wi‑Fi
+              {' '}<strong>SWARM-Setup-{'{chipId}'}</strong> (password = Device Unique ID),
+              then open <strong>http://192.168.4.1/setup</strong>. Use IP <strong>192.168.4.1</strong> here.
+            </li>
+            <li>
+              <strong>On plant Wi‑Fi?</strong> Check your router’s connected devices for ESP / SWARM,
+              or open <strong>http://&lt;ip&gt;/info</strong> in the browser — it shows chip ID and IP.
+            </li>
+          </ol>
+        </Typography>
       </Alert>
+
+      {knownHubs.length > 0 && (
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Your hubs</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Tap Use IP to fill the form. Copy if you need the address on another device.
+            </Typography>
+            <Grid container spacing={1}>
+              {knownHubs.map((hub) => (
+                <Grid item xs={12} md={6} key={hub.chipId}>
+                  <Box sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    p: 1.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                  }}>
+                    <Typography variant="body2" fontFamily="monospace">{hub.chipId}</Typography>
+                    <Typography variant="caption" color="text.secondary">{hub.plantName || 'Plant not set'}</Typography>
+                    <Typography variant="h6" fontFamily="monospace">
+                      {hub.deviceIp || 'IP not saved yet'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        disabled={!hub.deviceIp}
+                        onClick={() => useHubIp(hub.deviceIp)}
+                      >
+                        Use IP
+                      </Button>
+                      <Button
+                        size="small"
+                        startIcon={<ContentCopy />}
+                        disabled={!hub.deviceIp}
+                        onClick={() => copyIp(hub.deviceIp)}
+                      >
+                        {copiedIp === hub.deviceIp ? 'Copied' : 'Copy'}
+                      </Button>
+                      {hub.deviceIp && (
+                        <Button
+                          size="small"
+                          href={`http://${hub.deviceIp}/info`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open /info
+                        </Button>
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
       <Stepper
         activeStep={activeStep}
@@ -210,7 +324,8 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
                 <TextField fullWidth label="SWARM MODEL IP address" placeholder="192.168.1.45"
-                  value={espIp} onChange={(e) => setEspIp(e.target.value.trim())} />
+                  value={espIp} onChange={(e) => setEspIp(e.target.value.trim())}
+                  helperText="Use a hub above, 192.168.4.1 on setup Wi‑Fi, or the address from your router." />
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField fullWidth type="password" label="Device password"

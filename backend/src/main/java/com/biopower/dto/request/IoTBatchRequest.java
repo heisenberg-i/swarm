@@ -14,6 +14,8 @@ public class IoTBatchRequest {
     private Long plantId;
     private String chipId;
     private Integer rssi;
+    /** LAN IPv4 reported by the ESP hub (`WiFi.localIP()`). */
+    private String ip;
     @NotEmpty
     @Valid
     private List<Reading> readings;

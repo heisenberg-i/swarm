@@ -100,6 +100,7 @@ export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelec
             <TableHead>
               <TableRow>
                 <TableCell>Node Name</TableCell><TableCell>Plant</TableCell><TableCell>Hardware Type</TableCell>
+                <TableCell>Hub IP</TableCell><TableCell>Chip ID</TableCell>
                 <TableCell>Last Value</TableCell><TableCell>Battery</TableCell><TableCell>Signal</TableCell>
                 <TableCell>Status</TableCell><TableCell>Actions</TableCell>
               </TableRow>
@@ -110,6 +111,16 @@ export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelec
                   <TableCell>{n.nodeName}</TableCell>
                   <TableCell>{n.plantName}</TableCell>
                   <TableCell>{SENSOR_LABELS[n.sensorType] || n.sensorType}</TableCell>
+                  <TableCell>
+                    {n.deviceIp ? (
+                      <Typography variant="body2" fontFamily="monospace">{n.deviceIp}</Typography>
+                    ) : '--'}
+                  </TableCell>
+                  <TableCell>
+                    {n.deviceChipId ? (
+                      <Typography variant="body2" fontFamily="monospace">{n.deviceChipId}</Typography>
+                    ) : '--'}
+                  </TableCell>
                   <TableCell>{n.lastValue != null ? n.lastValue.toFixed(2) : '--'}</TableCell>
                   <TableCell>{n.batteryLevel}%</TableCell>
                   <TableCell>{n.signalStrength}%</TableCell>

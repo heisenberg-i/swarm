@@ -8,7 +8,7 @@ The Tenants table only shows a **user count per company**. It is not a user dire
 
 Users appear on a tenant only if `company_id` is set (created by that tenant’s Super Admin, or approved here).
 
-Public **Sign up** currently created an Operator with **no company**, so they never showed on Tata Steels. They could still log into the plant app with an empty plant list (alerts spinner). That is the gap this approval queue closes.
+Public **Sign up** currently created an Operator with **no company**, so they never showed on a tenant. They could still log into the plant app with an empty plant list (alerts spinner). That is the gap this approval queue closes.
 
 ## Module map
 

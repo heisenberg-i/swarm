@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -36,18 +35,14 @@ public class ProductionDataCleanup implements CommandLineRunner {
     private static final Set<String> LEGACY_USER_EMAILS = Set.of(
             "admin@biopower.com",
             "manager@biopower.com",
-            "operator@biopower.com"
+            "operator@biopower.com",
+            "tata.admin@tatasteel.com",
+            "tata.operator@tatasteel.com"
     );
 
     private final PlantRepository plantRepository;
     private final UserRepository userRepository;
-    private final SensorReadingRepository sensorReadingRepository;
-    private final AlertRepository alertRepository;
-    private final AiRecommendationRepository aiRecommendationRepository;
-    private final PredictiveMaintenanceRepository predictiveMaintenanceRepository;
-    private final ReportRepository reportRepository;
-    private final HmiEquipmentRepository hmiEquipmentRepository;
-    private final HmiEquipmentStateRepository hmiEquipmentStateRepository;
+    private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final SettingsService settingsService;
 
@@ -56,8 +51,8 @@ public class ProductionDataCleanup implements CommandLineRunner {
     public void run(String... args) {
         boolean firstMigration = !settingsService.getSettingsMap().containsKey(CLEANUP_FLAG);
 
-        removeNonTataPlants();
         removeLegacyUsers();
+        renameTataBranding();
         ensurePlatformAdmin(firstMigration);
 
         if (firstMigration) {
@@ -71,41 +66,44 @@ public class ProductionDataCleanup implements CommandLineRunner {
         }
     }
 
-    private void removeNonTataPlants() {
-        List<Plant> dummyPlants = plantRepository.findAll().stream()
-                .filter(p -> !isTataSteelPlant(p))
-                .toList();
-
-        for (Plant plant : dummyPlants) {
-            Long plantId = plant.getPlantId();
-            log.info("Removing legacy demo plant: {}", plant.getPlantName());
-
-            unlinkPlantFromUsers(plant);
-            sensorReadingRepository.deleteByPlantId(plantId);
-            alertRepository.deleteByPlantId(plantId);
-            aiRecommendationRepository.deleteByPlantId(plantId);
-            predictiveMaintenanceRepository.deleteByPlantId(plantId);
-            reportRepository.deleteByPlantId(plantId);
-            hmiEquipmentStateRepository.deleteByPlantId(plantId);
-            hmiEquipmentRepository.deleteByPlantId(plantId);
-            plantRepository.delete(plant);
-        }
-    }
-
-    private void unlinkPlantFromUsers(Plant plant) {
-        for (User user : userRepository.findAll()) {
-            if (user.getAssignedPlants().removeIf(p -> p.getPlantId().equals(plant.getPlantId()))) {
-                userRepository.save(user);
-            }
-        }
-    }
-
     private void removeLegacyUsers() {
         for (String email : LEGACY_USER_EMAILS) {
             userRepository.findByEmail(email).ifPresent(user -> {
                 log.info("Removing legacy demo user: {}", email);
+                if (user.getAssignedPlants() != null) {
+                    user.getAssignedPlants().clear();
+                }
+                if (user.getAssignedSensorNodes() != null) {
+                    user.getAssignedSensorNodes().clear();
+                }
+                userRepository.save(user);
                 userRepository.delete(user);
             });
+        }
+    }
+
+    private void renameTataBranding() {
+        for (Plant plant : plantRepository.findAll()) {
+            if (plant.getPlantName() != null && plant.getPlantName().toLowerCase().contains("tata")) {
+                String renamed = plant.getPlantName().replaceAll("(?i)tata steel\\s*", "").trim();
+                if (renamed.isBlank()) {
+                    renamed = "Biomethanation Plant";
+                }
+                log.info("Renaming plant '{}' -> '{}'", plant.getPlantName(), renamed);
+                plant.setPlantName(renamed);
+                plantRepository.save(plant);
+            }
+        }
+        for (var company : companyRepository.findAll()) {
+            if (company.getName() != null && company.getName().toLowerCase().contains("tata")) {
+                String renamed = company.getName().replaceAll("(?i)tata steel\\s*", "").trim();
+                if (renamed.isBlank()) {
+                    renamed = "Customer";
+                }
+                log.info("Renaming company '{}' -> '{}'", company.getName(), renamed);
+                company.setName(renamed);
+                companyRepository.save(company);
+            }
         }
     }
 
@@ -133,10 +131,5 @@ public class ProductionDataCleanup implements CommandLineRunner {
             userRepository.save(admin);
             log.info("Control Center admin created: {}", PLATFORM_ADMIN_EMAIL);
         });
-    }
-
-    private static boolean isTataSteelPlant(Plant plant) {
-        return plant.getPlantName() != null
-                && plant.getPlantName().toLowerCase().contains("tata steel");
     }
 }

@@ -124,14 +124,14 @@ curl -H "Authorization: Bearer <api_key>" \
 
 ---
 
-## Tata Steel pilot setup (SWARM operator)
+## Partner organization setup (SWARM operator)
 
 1. Log in to `https://app.swarm.co.in` as SUPER_ADMIN
 2. Open **emPOWER Partners** (`/partners`)
 3. Create organization:
-   - Name: `Tata Steel Jamshedpur`
+   - Name: customer site name
    - emPOWER org ID: *(get from emPOWER when ready; use placeholder until then)*
-   - Plants: select Tata plant(s)
+   - Plants: select that tenant’s plant(s)
 4. Create API key named `emPOWER production`
 5. Copy key → secure handoff to emPOWER admin
 6. Run verification curls above before closing the ticket

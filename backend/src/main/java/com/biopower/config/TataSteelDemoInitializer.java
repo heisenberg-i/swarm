@@ -31,20 +31,20 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Seeds Tata Steel West Bokaro biomethanation demo data (SWM-TSL-WBK-BOD-001, Rev. 0).
- * Idempotent — safe to run on databases that already contain other plants/users.
+ * Optional P&amp;ID biomethanation demo plant seed. Disabled unless biopower.seed.pid-demo=true.
+ * Does not create customer-specific login accounts.
  */
 @Component
 @Order(2)
-@ConditionalOnProperty(name = "biopower.deployment.role", havingValue = "primary", matchIfMissing = true)
+@ConditionalOnProperty(name = "biopower.seed.pid-demo", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class TataSteelDemoInitializer implements CommandLineRunner {
 
-    public static final String DEMO_PLANT_NAME = "Tata Steel West Bokaro Biomethanation Plant";
-    public static final String DEMO_ADMIN_EMAIL = "tata.admin@tatasteel.com";
-    public static final String DEMO_OPERATOR_EMAIL = "tata.operator@tatasteel.com";
-    public static final String DEMO_PASSWORD = "TataSteel@2026";
+    public static final String DEMO_PLANT_NAME = "West Bokaro Biomethanation Plant";
+    public static final String DEMO_ADMIN_EMAIL = "plant.admin@example.invalid";
+    public static final String DEMO_OPERATOR_EMAIL = "plant.operator@example.invalid";
+    public static final String DEMO_PASSWORD = "ChangeMe";
 
     private final PlantRepository plantRepository;
     private final UserRepository userRepository;
@@ -57,11 +57,11 @@ public class TataSteelDemoInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         if (userRepository.existsByEmail(DEMO_ADMIN_EMAIL)) {
-            log.debug("Tata Steel demo data already present — skipping seed.");
+            log.debug("P&ID demo data already present — skipping seed.");
             return;
         }
 
-        log.info("Initializing Tata Steel West Bokaro demo plant and accounts...");
+        log.info("Initializing P&ID biomethanation demo plant (no customer accounts)...");
 
         Plant plant = plantRepository.save(Plant.builder()
                 .plantName(DEMO_PLANT_NAME)
@@ -123,9 +123,9 @@ public class TataSteelDemoInitializer implements CommandLineRunner {
         }
 
         userRepository.save(User.builder()
-                .name("Tata Steel Plant Admin")
+                .name("Plant Admin")
                 .email(DEMO_ADMIN_EMAIL)
-                .mobile("+919331234567")
+                .mobile("+910000000001")
                 .password(passwordEncoder.encode(DEMO_PASSWORD))
                 .role(UserRole.PLANT_ADMIN)
                 .status(UserStatus.ACTIVE)
@@ -133,9 +133,9 @@ public class TataSteelDemoInitializer implements CommandLineRunner {
                 .build());
 
         userRepository.save(User.builder()
-                .name("Tata Steel Shift Operator")
+                .name("Shift Operator")
                 .email(DEMO_OPERATOR_EMAIL)
-                .mobile("+919331234568")
+                .mobile("+910000000002")
                 .password(passwordEncoder.encode(DEMO_PASSWORD))
                 .role(UserRole.OPERATOR)
                 .status(UserStatus.ACTIVE)
@@ -144,9 +144,7 @@ public class TataSteelDemoInitializer implements CommandLineRunner {
 
         predictiveMaintenanceService.generatePredictionsForPlant(plant.getPlantId());
 
-        log.info("Tata Steel demo ready — plant: '{}'", DEMO_PLANT_NAME);
-        log.info("  Admin:    {} / {}", DEMO_ADMIN_EMAIL, DEMO_PASSWORD);
-        log.info("  Operator: {} / {}", DEMO_OPERATOR_EMAIL, DEMO_PASSWORD);
+        log.info("P&ID demo plant ready: '{}'", DEMO_PLANT_NAME);
     }
 
     private void generateReadings(Long plantId, SensorNode node, double baseline) {

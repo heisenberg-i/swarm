@@ -105,3 +105,27 @@ mysql_sync_wait_tcp() {
   mysql_sync_log "ERROR: MySQL TCP not ready at ${host}:${port}"
   return 1
 }
+
+mysql_sync_wait_mysql() {
+  local max_attempts="${1:-60}"
+  local sleep_secs="${2:-5}"
+  mysql_sync_wait_tcp "${max_attempts}" "${sleep_secs}"
+  mysql_sync_log "Waiting for MySQL to accept queries on ${RAILWAY_MYSQL_HOST}:${RAILWAY_MYSQL_PORT}"
+  local attempt=1
+  while [[ "${attempt}" -le "${max_attempts}" ]]; do
+    if mysql \
+      --host="${RAILWAY_MYSQL_HOST}" \
+      --port="${RAILWAY_MYSQL_PORT}" \
+      --user="${RAILWAY_MYSQL_USER}" \
+      --password="${RAILWAY_MYSQL_PASSWORD}" \
+      --skip-ssl \
+      -e "SELECT 1" "${RAILWAY_MYSQL_DATABASE}" >/dev/null 2>&1; then
+      mysql_sync_log "MySQL query ready after ${attempt} attempt(s)"
+      return 0
+    fi
+    sleep "${sleep_secs}"
+    attempt=$((attempt + 1))
+  done
+  mysql_sync_log "ERROR: MySQL not accepting queries at ${RAILWAY_MYSQL_HOST}:${RAILWAY_MYSQL_PORT}"
+  return 1
+}

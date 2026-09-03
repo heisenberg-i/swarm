@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Ensures P&ID instrument demo sensors exist on the Tata Steel plant (idempotent).
+ * Ensures P&amp;ID instrument sensors exist on biomethanation / P&amp;ID plants (idempotent).
  */
 @Component
 @Order(3)
@@ -37,8 +37,7 @@ public class TataSteelSensorSync implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         plantRepository.findAll().stream()
-                .filter(p -> p.getPlantName() != null
-                        && p.getPlantName().contains(TataSteelDemoInitializer.DEMO_PLANT_NAME))
+                .filter(this::isPidPlant)
                 .findFirst()
                 .ifPresent(this::syncInstruments);
     }
@@ -91,8 +90,16 @@ public class TataSteelSensorSync implements CommandLineRunner {
             added++;
         }
         if (added > 0) {
-            log.info("Tata Steel P&ID instrument sensors: added {} missing node(s)", added);
+            log.info("P&ID instrument sensors: added {} missing node(s) on {}", added, plant.getPlantName());
         }
+    }
+
+    private boolean isPidPlant(Plant plant) {
+        if (plant.getFeedstockType() != null && plant.getFeedstockType().toUpperCase().contains("P&ID")) {
+            return true;
+        }
+        String name = plant.getPlantName() != null ? plant.getPlantName().toLowerCase() : "";
+        return name.contains("biomethanation");
     }
 
     private void seedReading(Long plantId, SensorNode node, double baseline) {

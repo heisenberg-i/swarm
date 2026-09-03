@@ -212,7 +212,7 @@ export default function PidDiagram(props) {
       }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Typography variant="subtitle1" fontWeight={700} color="white">
-            P&ID BPG-10-PR-GD-002 Rev.3 — Tata Steel West Bokaro
+            P&ID BPG-10-PR-GD-002 Rev.3 — Biomethanation plant
           </Typography>
           <Box>
             {toolbar}

@@ -92,12 +92,19 @@ public class IoTDataService {
             aiHealthService.analyzePlant(request.getPlantId());
         }
 
-        if (request.getRssi() != null) {
-            int signalPercent = rssiToPercent(request.getRssi());
+        String deviceIp = request.getIp() != null ? request.getIp().trim() : "";
+        Integer rssi = request.getRssi();
+        if (rssi != null || !deviceIp.isBlank()) {
+            int signalPercent = rssi != null ? rssiToPercent(rssi) : -1;
             for (Long nodeId : updatedNodes) {
                 sensorNodeRepository.findByNodeIdAndPlantPlantId(nodeId, request.getPlantId())
                         .ifPresent(node -> {
-                            node.setSignalStrength(signalPercent);
+                            if (rssi != null) {
+                                node.setSignalStrength(signalPercent);
+                            }
+                            if (!deviceIp.isBlank()) {
+                                node.setDeviceIp(deviceIp);
+                            }
                             sensorNodeRepository.save(node);
                         });
             }

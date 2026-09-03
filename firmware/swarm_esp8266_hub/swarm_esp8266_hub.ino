@@ -186,6 +186,7 @@ bool sendToSwarm() {
   doc["plantId"] = swarmCfg.plantId;
   doc["chipId"] = chipId();
   doc["rssi"] = WiFi.RSSI();
+  doc["ip"] = WiFi.localIP().toString();
 
   JsonArray readings = doc.createNestedArray("readings");
 

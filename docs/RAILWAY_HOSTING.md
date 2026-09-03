@@ -162,13 +162,11 @@ railway up ./frontend --path-as-root -s swarm_webapp -d -y
 
 ---
 
-## Demo logins (Tata Steel plant)
+## Demo logins
 
 | Role | Email | Password |
 |------|-------|----------|
-| Super Admin | swarm.nfi@gmail.com | Swarm@2026 |
-| Plant Admin | tata.admin@tatasteel.com | TataSteel@2026 |
-| Operator | tata.operator@tatasteel.com | TataSteel@2026 |
+| Control Center Admin | swarm.nfi@gmail.com | Swarm@2026 |
 
 ---
 

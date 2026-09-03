@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 public class HmiService {
 
     private static final String DIAGRAM_URL = "/hmi/biogas-pfd.html";
-    private static final String PID_REFERENCE = "Biogas Plant PFD — block diagram HMI (Tata Steel West Bokaro)";
+    private static final String PID_REFERENCE = "Biogas Plant PFD — block diagram HMI";
 
     private final HmiEquipmentRepository equipmentRepository;
     private final HmiEquipmentStateRepository equipmentStateRepository;
@@ -357,7 +357,7 @@ public class HmiService {
     private void ensureEquipmentSeeded(Long plantId) {
         if (!hmiPlantSetupService.seedIfNeeded(plantId)) {
             throw new BadRequestException(
-                    "HMI is not configured for this plant. Use a P&ID plant such as Tata Steel West Bokaro.");
+                    "HMI is not configured for this plant. Use a plant whose feedstock includes P&ID, or a biomethanation plant.");
         }
     }
 
