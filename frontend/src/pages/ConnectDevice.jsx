@@ -17,6 +17,12 @@ function isLocalhostUrl(url) {
   return lower.includes('localhost') || lower.includes('127.0.0.1');
 }
 
+function hubDeviceName(nodeNames) {
+  if (!nodeNames?.length) return '';
+  const hubLike = nodeNames.find((n) => /hub/i.test(n));
+  return hubLike || nodeNames[0];
+}
+
 async function espFetch(ip, path, password) {
   if (path === '/api/status') {
     return fetchEspStatus(ip, password);
@@ -71,9 +77,13 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
             chipId: chip,
             plantName: n.plantName,
             deviceIp: n.deviceIp,
+            nodeNames: [],
           };
           if (n.deviceIp) existing.deviceIp = n.deviceIp;
           if (n.plantName) existing.plantName = n.plantName;
+          if (n.nodeName && !existing.nodeNames.includes(n.nodeName)) {
+            existing.nodeNames.push(n.nodeName);
+          }
           byChip.set(chip, existing);
         });
         setKnownHubs([...byChip.values()]);
@@ -106,7 +116,9 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
       const status = await espFetch(normalizedIp, '/api/status', normalizedPassword);
       setEspInfo(info);
       setEspStatus(status);
-      setDeviceName((prev) => prev || `ESP-Hub-${info.chipId?.slice(-4) || 'node'}`);
+      const known = knownHubs.find((h) => h.chipId === info.chipId);
+      const existingName = hubDeviceName(known?.nodeNames);
+      setDeviceName((prev) => prev || existingName || `ESP-Hub-${info.chipId?.slice(-4) || 'node'}`);
       setActiveStep(1);
     } catch (e) {
       const msg = e.message || e.response?.data?.message || '';
@@ -267,6 +279,9 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
                     flexDirection: 'column',
                     gap: 0.5,
                   }}>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      {hubDeviceName(hub.nodeNames) || 'Unnamed hub'}
+                    </Typography>
                     <Typography variant="body2" fontFamily="monospace">{hub.chipId}</Typography>
                     <Typography variant="caption" color="text.secondary">{hub.plantName || 'Plant not set'}</Typography>
                     <Typography variant="h6" fontFamily="monospace">
@@ -340,6 +355,14 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
             </Grid>
           </CardContent>
         </Card>
+      )}
+
+      {activeStep >= 1 && espInfo && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Connected to <strong>{deviceName || 'this hub'}</strong>
+          {espInfo.chipId ? ` · chip ${espInfo.chipId}` : ''}
+          {espIp ? ` · ${espIp}` : ''}
+        </Alert>
       )}
 
       {activeStep >= 1 && espStatus && (
@@ -435,7 +458,7 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
         <Alert severity="success">
           <Typography fontWeight={600}>Paired successfully!</Typography>
           <Typography variant="body2" sx={{ mt: 1 }}>
-            Chip {pairResult.chipId} · Temperature node: {pairResult.temperatureNodeId} · Humidity: {pairResult.humidityNodeId} · Gas: {pairResult.gasNodeId}
+            {deviceName ? `${deviceName} · ` : ''}Chip {pairResult.chipId} · Temperature node: {pairResult.temperatureNodeId} · Humidity: {pairResult.humidityNodeId} · Gas: {pairResult.gasNodeId}
           </Typography>
           <Typography variant="body2" sx={{ mt: 1 }}>
             ESP will send data every 10 seconds. Assign sensors in User Management if needed.

@@ -42,6 +42,7 @@ public class PartnerTelemetryService {
                 .organizationId(principal.getExternalOrgId())
                 .organizationName(principal.getOrganizationName())
                 .serverTime(Instant.now())
+                .devices(listDevices(principal, null))
                 .build();
     }
 
@@ -61,7 +62,7 @@ public class PartnerTelemetryService {
         }
         return plants.stream()
                 .flatMap(plant -> sensorNodeRepository.findByPlantPlantId(plant.getPlantId()).stream()
-                        .map(node -> toDeviceResponse(node, plant.getPlantId())))
+                        .map(node -> toDeviceResponse(node, plant)))
                 .collect(Collectors.toList());
     }
 
@@ -315,11 +316,12 @@ public class PartnerTelemetryService {
                 .build();
     }
 
-    private PartnerDeviceResponse toDeviceResponse(SensorNode node, Long plantId) {
+    private PartnerDeviceResponse toDeviceResponse(SensorNode node, Plant plant) {
         SensorType type = node.getSensorType();
         return PartnerDeviceResponse.builder()
                 .deviceId(PartnerMetricCatalog.deviceIdFor(node.getNodeId()))
-                .plantId(String.valueOf(plantId))
+                .plantId(String.valueOf(plant.getPlantId()))
+                .plantName(plant.getPlantName())
                 .name(node.getNodeName())
                 .metricType(type.name())
                 .unit(PartnerMetricCatalog.unitFor(type))

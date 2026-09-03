@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,6 +18,8 @@ public class PartnerHealthResponse {
     private String organizationId;
     private String organizationName;
     private Instant serverTime;
+    /** Catalog names so hub mapping can show the device, not only node_{id}. */
+    private List<PartnerDeviceResponse> devices;
 
     @JsonGetter("organization_id")
     public String jsonOrganizationIdSnake() {

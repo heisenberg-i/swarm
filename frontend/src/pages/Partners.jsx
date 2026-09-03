@@ -177,10 +177,18 @@ export default function Partners() {
     setTesting(true);
     setTestResult(null);
     try {
-      const { data } = await axios.get(`${apiBase}/partner/v1/health`, {
-        headers: { Authorization: `Bearer ${testKey.trim()}` },
-      });
-      setTestResult({ ok: true, data });
+      const headers = { Authorization: `Bearer ${testKey.trim()}` };
+      const { data } = await axios.get(`${apiBase}/partner/v1/health`, { headers });
+      let devices = data.devices || [];
+      if (!devices.length) {
+        try {
+          const catalog = await axios.get(`${apiBase}/partner/v1/devices`, { headers });
+          devices = catalog.data || [];
+        } catch {
+          devices = [];
+        }
+      }
+      setTestResult({ ok: true, data, devices });
     } catch (err) {
       setTestResult({
         ok: false,
@@ -396,6 +404,12 @@ export default function Partners() {
                 testResult.ok ? (
                   <Alert severity="success">
                     Connected — org <strong>{testResult.data.organizationId}</strong> ({testResult.data.organizationName})
+                    {testResult.devices?.length > 0 && (
+                      <Box component="span" sx={{ display: 'block', mt: 1 }}>
+                        Devices:{' '}
+                        {testResult.devices.map((d) => d.name || d.device_name || d.deviceId).join(', ')}
+                      </Box>
+                    )}
                   </Alert>
                 ) : (
                   <Alert severity="error">{testResult.message}</Alert>

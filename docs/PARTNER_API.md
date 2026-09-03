@@ -14,7 +14,7 @@ curl -H "Authorization: Bearer <your_api_key>" \
   https://api.swarm.co.in/api/partner/v1/health
 ```
 
-Expected response fields: `status`, `organizationId` (matches `externalOrgId`), `organizationName`, `serverTime`.
+Expected response fields: `status`, `organizationId` (matches `externalOrgId`), `organizationName`, `serverTime`, `devices` (each includes `deviceId` / `device_id`, `name` / `device_name`, `plantName` / `plant_name`).
 
 ---
 
