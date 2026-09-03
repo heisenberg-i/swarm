@@ -22,21 +22,12 @@ export function getControlCenterOrigin() {
   return CONTROL_ORIGIN;
 }
 
+/** Control Center is role-based. Do not require control.swarm.co.in (that DNS record is not live). */
 export function shouldShowControlCenter(user) {
-  if (!user || user.role !== 'CONTROL_CENTER_ADMIN') return false;
-  if (isLocalHost()) return true;
-  return isControlCenterHost();
+  return Boolean(user && user.role === 'CONTROL_CENTER_ADMIN');
 }
 
 export function getHomeRoute(role) {
-  if (role === 'CONTROL_CENTER_ADMIN') {
-    if (isLocalHost() || isControlCenterHost()) return '/overview';
-    window.location.replace(`${CONTROL_ORIGIN}/overview`);
-    return '/overview';
-  }
-  if (isControlCenterHost() && !isLocalHost()) {
-    window.location.replace(`${APP_ORIGIN}/dashboard`);
-    return '/dashboard';
-  }
+  if (role === 'CONTROL_CENTER_ADMIN') return '/overview';
   return '/dashboard';
 }

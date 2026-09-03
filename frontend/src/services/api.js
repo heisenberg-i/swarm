@@ -122,6 +122,7 @@ export const settingsAPI = {
 export const partnerAPI = {
   listOrganizations: () => api.get('/admin/partner/organizations'),
   createOrganization: (data) => api.post('/admin/partner/organizations', data),
+  updateOrganization: (id, data) => api.put(`/admin/partner/organizations/${id}`, data),
   listApiKeys: (organizationId) => api.get('/admin/partner/api-keys', { params: { organizationId } }),
   createApiKey: (data) => api.post('/admin/partner/api-keys', data),
   revokeApiKey: (id) => api.delete(`/admin/partner/api-keys/${id}`),

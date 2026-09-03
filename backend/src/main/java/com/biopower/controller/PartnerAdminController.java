@@ -34,6 +34,14 @@ public class PartnerAdminController {
                 .body(ApiResponse.success("Organization created", partnerApiKeyService.createOrganization(request)));
     }
 
+    @PutMapping("/organizations/{id}")
+    public ResponseEntity<ApiResponse<PartnerOrganizationResponse>> updateOrganization(
+            @PathVariable Long id,
+            @Valid @RequestBody PartnerOrganizationRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Organization updated", partnerApiKeyService.updateOrganization(id, request)));
+    }
+
     @GetMapping("/api-keys")
     public ResponseEntity<ApiResponse<List<PartnerApiKeyResponse>>> listApiKeys(
             @RequestParam Long organizationId) {

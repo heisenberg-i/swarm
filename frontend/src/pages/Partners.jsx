@@ -5,7 +5,7 @@ import {
   FormControl, InputLabel, Select, MenuItem, Checkbox, ListItemText, OutlinedInput, Divider, IconButton,
   Tooltip, Grid,
 } from '@mui/material';
-import { Add, ContentCopy, Delete, Link as LinkIcon, Refresh, VpnKey } from '@mui/icons-material';
+import { Add, ContentCopy, Delete, Edit, Link as LinkIcon, Refresh, VpnKey } from '@mui/icons-material';
 import axios from 'axios';
 import { partnerAPI, plantAPI } from '../services/api';
 
@@ -13,6 +13,15 @@ const PRODUCTION_API = 'https://api.swarm.co.in/api';
 const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PRODUCTION_API : '/api');
 
 const emptyOrgForm = { name: '', externalOrgId: '', plantIds: [] };
+
+const ORG_ID_HELP =
+  'Copy the exact id from emPOWER Settings → Swarm API: “This tenant\'s emPOWER organization ID is …”. '
+  + 'Vulcan Mozambique is 001. Do not invent slugs such as org_vulcan_mozambique.';
+
+function looksInventedOrgSlug(id) {
+  const value = (id || '').trim();
+  return value.toLowerCase().startsWith('org_') && value.toLowerCase() !== 'org_biopower_pilot';
+}
 
 function formatDate(value) {
   if (!value) return '—';
@@ -32,6 +41,7 @@ export default function Partners() {
   const [success, setSuccess] = useState('');
 
   const [orgDialogOpen, setOrgDialogOpen] = useState(false);
+  const [editingOrgId, setEditingOrgId] = useState(null);
   const [orgForm, setOrgForm] = useState(emptyOrgForm);
   const [creatingOrg, setCreatingOrg] = useState(false);
 
@@ -87,17 +97,44 @@ export default function Partners() {
     setTimeout(() => setSuccess(''), 4000);
   };
 
-  const handleCreateOrg = async () => {
+  const openCreateOrg = () => {
+    setEditingOrgId(null);
+    setOrgForm(emptyOrgForm);
+    setOrgDialogOpen(true);
+  };
+
+  const openEditOrg = (org) => {
+    setEditingOrgId(org.id);
+    setOrgForm({
+      name: org.name || '',
+      externalOrgId: org.externalOrgId || '',
+      plantIds: (org.plantIds || []).map(Number),
+    });
+    setOrgDialogOpen(true);
+  };
+
+  const handleSaveOrg = async () => {
     setCreatingOrg(true);
     setError('');
     try {
-      await partnerAPI.createOrganization(orgForm);
+      const payload = {
+        name: orgForm.name.trim(),
+        externalOrgId: orgForm.externalOrgId.trim(),
+        plantIds: orgForm.plantIds,
+      };
+      if (editingOrgId) {
+        await partnerAPI.updateOrganization(editingOrgId, payload);
+        showSuccess('Organization updated — GET /health now returns this emPOWER Org ID');
+      } else {
+        await partnerAPI.createOrganization(payload);
+        showSuccess('Organization created');
+      }
       setOrgDialogOpen(false);
+      setEditingOrgId(null);
       setOrgForm(emptyOrgForm);
-      showSuccess('Organization created');
       loadOrganizations();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create organization');
+      setError(err.response?.data?.message || 'Failed to save organization');
     } finally {
       setCreatingOrg(false);
     }
@@ -181,12 +218,12 @@ export default function Partners() {
             Partner API: {PARTNER_API_BASE}
           </Typography>
           <Typography variant="caption" color="text.secondary" display="block">
-            externalOrgId = emPOWER organizationId (one API key per emPOWER org)
+            emPOWER Org ID must match Settings helper text (e.g. 001). One API key per emPOWER tenant.
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button startIcon={<Refresh />} variant="outlined" onClick={loadOrganizations}>Refresh</Button>
-          <Button startIcon={<Add />} variant="contained" onClick={() => setOrgDialogOpen(true)}>New Organization</Button>
+          <Button startIcon={<Add />} variant="contained" onClick={openCreateOrg}>New Organization</Button>
         </Box>
       </Box>
 
@@ -223,7 +260,12 @@ export default function Partners() {
                       >
                         <TableCell>{org.name}</TableCell>
                         <TableCell>
-                          <Typography variant="body2" fontFamily="monospace">{org.externalOrgId}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="body2" fontFamily="monospace">{org.externalOrgId}</Typography>
+                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); copyToClipboard(org.externalOrgId); }}>
+                              <ContentCopy fontSize="inherit" />
+                            </IconButton>
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <Chip size="small" label={org.active ? 'Active' : 'Inactive'} color={org.active ? 'success' : 'default'} />
@@ -235,7 +277,12 @@ export default function Partners() {
               </TableContainer>
               {selectedOrg && (
                 <Box sx={{ mt: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>Allowed plants</Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="subtitle2">Allowed plants</Typography>
+                    <Button size="small" startIcon={<Edit />} onClick={() => openEditOrg(selectedOrg)}>
+                      Edit org ID
+                    </Button>
+                  </Box>
                   {selectedOrg.plantIds?.length ? (
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                       {selectedOrg.plantIds.map((id) => (
@@ -363,9 +410,15 @@ export default function Partners() {
         </Grid>
       </Grid>
 
-      <Dialog open={orgDialogOpen} onClose={() => setOrgDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>New Partner Organization</DialogTitle>
+      <Dialog open={orgDialogOpen} onClose={() => { setOrgDialogOpen(false); setEditingOrgId(null); }} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingOrgId ? 'Edit Partner Organization' : 'New Partner Organization'}</DialogTitle>
         <DialogContent>
+          <Alert severity="info" sx={{ mt: 1 }}>{ORG_ID_HELP}</Alert>
+          {looksInventedOrgSlug(orgForm.externalOrgId) && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              This looks like an invented slug. Use the emPOWER Settings helper id (Vulcan = 001), then Save.
+            </Alert>
+          )}
           <TextField
             fullWidth
             margin="normal"
@@ -376,8 +429,9 @@ export default function Partners() {
           <TextField
             fullWidth
             margin="normal"
-            label="emPOWER organization ID (externalOrgId)"
-            helperText="Must match emPOWER organizationId (stored as externalOrgId)"
+            label="emPOWER Org ID"
+            placeholder="001"
+            helperText="Must match emPOWER Settings helper. GET /health returns this as organizationId."
             value={orgForm.externalOrgId}
             onChange={(e) => setOrgForm({ ...orgForm, externalOrgId: e.target.value })}
           />
@@ -400,13 +454,13 @@ export default function Partners() {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOrgDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => { setOrgDialogOpen(false); setEditingOrgId(null); }}>Cancel</Button>
           <Button
             variant="contained"
             disabled={creatingOrg || !orgForm.name.trim() || !orgForm.externalOrgId.trim()}
-            onClick={handleCreateOrg}
+            onClick={handleSaveOrg}
           >
-            Create
+            {editingOrgId ? 'Save' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>

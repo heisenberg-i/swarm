@@ -21,7 +21,7 @@ emPOWER does **not** get SWARM user accounts, JWT login, or UI embed access.
 |-------|---------|-------|
 | Base URL | `https://api.swarm.co.in/api/partner/v1` | Production |
 | API key | `swk_…` | Store server-side only; never in browser or NOVA client |
-| Organization ID | `org_tata_steel_jamshedpur` or UUID | Must match SWARM `externalOrgId` |
+| Organization ID | `001` (Vulcan) or the Settings helper id | Must match SWARM `externalOrgId` / `/health.organizationId`. Never `org_vulcan_mozambique`. |
 | Allowed plant IDs | `[1]` | SWARM-side allow-list; key cannot read other plants |
 
 ---
@@ -37,7 +37,7 @@ Store per emPOWER organization:
   "provider": "swarm",
   "baseUrl": "https://api.swarm.co.in/api/partner/v1",
   "apiKey": "<from SWARM>",
-  "externalOrgId": "<from SWARM>",
+  "externalOrgId": "001",
   "plantIds": [1]
 }
 ```

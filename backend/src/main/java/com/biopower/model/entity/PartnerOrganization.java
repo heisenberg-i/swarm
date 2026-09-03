@@ -24,7 +24,7 @@ public class PartnerOrganization {
     @Column(nullable = false)
     private String name;
 
-    /** emPOWER organizationId or other external tenant reference */
+    /** emPOWER Settings helper id (e.g. 001), not an invented org_* slug */
     @Column(name = "external_org_id", nullable = false, unique = true, length = 100)
     private String externalOrgId;
 

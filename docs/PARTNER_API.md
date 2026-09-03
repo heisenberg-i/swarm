@@ -35,7 +35,8 @@ Authorization: Bearer <super_admin_jwt>
 }
 ```
 
-- `externalOrgId` must match the emPOWER organization ID exactly.
+- `externalOrgId` must be the **exact** id from emPOWER Settings → Swarm API helper: “This tenant's emPOWER organization ID is …”. Example for Vulcan Mozambique: **`001`**. Do **not** invent slugs such as `org_vulcan_mozambique`.
+- `GET /health` returns that value as `organizationId` (and `organization_id`). emPOWER ping binds on it when the Org ID field is filled.
 - `plantIds` is the allow-list — the API key can only read telemetry for those plants.
 
 ### 2. Issue API key
@@ -159,6 +160,7 @@ JWT Super Admin endpoints (not for emPOWER):
 |--------|------|---------|
 | GET | `/api/admin/partner/organizations` | List orgs |
 | POST | `/api/admin/partner/organizations` | Create org |
+| PUT | `/api/admin/partner/organizations/{id}` | Update name, emPOWER Org ID, plant allow-list |
 | GET | `/api/admin/partner/api-keys?organizationId=` | List keys (no secret) |
 | POST | `/api/admin/partner/api-keys` | Create API key |
 | DELETE | `/api/admin/partner/api-keys/{id}` | Revoke key |

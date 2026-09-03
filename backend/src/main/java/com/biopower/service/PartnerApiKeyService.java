@@ -15,6 +15,7 @@ import com.biopower.repository.PartnerOrganizationRepository;
 import com.biopower.repository.PlantRepository;
 import com.biopower.security.PartnerPrincipal;
 import com.biopower.util.ApiKeyHasher;
+import com.biopower.util.ExternalOrgIds;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,16 +66,44 @@ public class PartnerApiKeyService {
 
     @Transactional
     public PartnerOrganizationResponse createOrganization(PartnerOrganizationRequest request) {
-        if (organizationRepository.existsByExternalOrgId(request.getExternalOrgId())) {
-            throw new BadRequestException("Organization already exists: " + request.getExternalOrgId());
+        String externalOrgId = requireExternalOrgId(request.getExternalOrgId());
+        if (organizationRepository.existsByExternalOrgId(externalOrgId)) {
+            throw new BadRequestException("Organization already exists: " + externalOrgId);
         }
         PartnerOrganization org = PartnerOrganization.builder()
                 .name(request.getName().trim())
-                .externalOrgId(request.getExternalOrgId().trim())
+                .externalOrgId(externalOrgId)
                 .active(true)
                 .allowedPlants(resolvePlants(request.getPlantIds()))
                 .build();
         return toOrganizationResponse(organizationRepository.save(org));
+    }
+
+    @Transactional
+    public PartnerOrganizationResponse updateOrganization(Long id, PartnerOrganizationRequest request) {
+        PartnerOrganization org = organizationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Partner organization not found"));
+        String externalOrgId = requireExternalOrgId(request.getExternalOrgId());
+        organizationRepository.findByExternalOrgId(externalOrgId)
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new BadRequestException("Organization already exists: " + externalOrgId);
+                });
+        org.setName(request.getName().trim());
+        org.setExternalOrgId(externalOrgId);
+        org.setAllowedPlants(resolvePlants(request.getPlantIds()));
+        return toOrganizationResponse(organizationRepository.save(org));
+    }
+
+    private String requireExternalOrgId(String raw) {
+        String externalOrgId = ExternalOrgIds.normalize(raw);
+        if (externalOrgId.isEmpty()) {
+            throw new BadRequestException(
+                    "emPOWER organization ID is required. Copy it from emPOWER Settings "
+                            + "(“This tenant's emPOWER organization ID is …”), e.g. 001. "
+                            + "Do not invent slugs such as org_vulcan_mozambique.");
+        }
+        return externalOrgId;
     }
 
     @Transactional
