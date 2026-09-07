@@ -28,6 +28,7 @@ import CompanyDetail from './pages/control-center/CompanyDetail';
 import PlantInventory from './pages/control-center/PlantInventory';
 import Overview from './pages/control-center/Overview';
 import Approvals from './pages/control-center/Approvals';
+import HmiAccess from './pages/control-center/HmiAccess';
 import { isNativeApp } from './utils/networkError';
 import { getHomeRoute, shouldShowControlCenter } from './utils/homeRoute';
 
@@ -109,6 +110,7 @@ function App() {
           <Route path="companies/:id" element={<CompanyDetail />} />
           <Route path="plants" element={<PlantInventory />} />
           <Route path="approvals" element={<Approvals />} />
+          <Route path="hmi-access" element={<HmiAccess />} />
           <Route path="change-password" element={<ChangePassword />} />
         </Route>
       ) : (

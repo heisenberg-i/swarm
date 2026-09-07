@@ -43,7 +43,12 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
     if (!selectedPlant) return;
     dashboardAPI.getDashboard(selectedPlant).then(({ data }) => setDashboard(data.data));
     alertAPI.getAll({ plantId: selectedPlant, status: 'ACTIVE' }).then(({ data }) => setAlerts((data.data || []).slice(0, 5)));
-    hmiAPI.getState(selectedPlant).then(({ data }) => setHmiState(data.data)).catch(() => setHmiState(null));
+    const plant = plants.find((p) => Number(p.plantId) === Number(selectedPlant));
+    if (plant?.hmiEnabled) {
+      hmiAPI.getState(selectedPlant).then(({ data }) => setHmiState(data.data)).catch(() => setHmiState(null));
+    } else {
+      setHmiState(null);
+    }
   };
 
   useEffect(() => {
@@ -70,7 +75,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
     fetchData();
     const interval = setInterval(fetchData, DASHBOARD_POLL_MS);
     return () => clearInterval(interval);
-  }, [selectedPlant]);
+  }, [selectedPlant, plants]);
 
   // Same-LAN fast path: browser pulls ESP directly, then pushes readings to SWARM.
   useEffect(() => {
@@ -152,6 +157,15 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
   const healthScore = dashboard?.healthScore || 0;
   const healthStatus = dashboard?.healthStatus || 'GOOD';
 
+  const STALE_MS = 10 * 60 * 1000;
+
+  const effectiveDeviceStatus = (device) => {
+    if (device.status === 'INACTIVE' || device.status === 'FAULTY') return device.status;
+    const t = device.lastReadingAt ? new Date(device.lastReadingAt).getTime() : NaN;
+    if (!Number.isFinite(t) || Date.now() - t > STALE_MS) return 'OFFLINE';
+    return device.status === 'ACTIVE' ? 'ACTIVE' : (device.status || 'OFFLINE');
+  };
+
   const deviceStatusColor = (status) => {
     if (status === 'ACTIVE') return 'success';
     if (status === 'OFFLINE' || status === 'FAULTY') return 'error';
@@ -214,9 +228,9 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
         </Card>
       )}
 
-      {!hmiState && selectedPlant && (
+      {!hmiState && selectedPlant && plants.find((p) => Number(p.plantId) === Number(selectedPlant))?.hmiEnabled === false && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          P&ID HMI is available for plants with P&ID configuration (biomethanation / P&ID feedstock).
+          Plant HMI is off for this site until Control Center enables it.
         </Alert>
       )}
 
@@ -322,7 +336,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
                     <TableCell>{device.humidity != null ? device.humidity.toFixed(1) : '--'}</TableCell>
                     <TableCell>{device.gas != null ? device.gas.toFixed(0) : '--'}</TableCell>
                     <TableCell>
-                      <Chip label={device.status} size="small" color={deviceStatusColor(device.status)} />
+                      <Chip label={effectiveDeviceStatus(device)} size="small" color={deviceStatusColor(effectiveDeviceStatus(device))} />
                     </TableCell>
                     <TableCell>{formatDate(device.lastReadingAt)}</TableCell>
                     <TableCell align="right">

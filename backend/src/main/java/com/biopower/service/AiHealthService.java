@@ -11,6 +11,7 @@ import com.biopower.model.enums.*;
 import com.biopower.repository.*;
 import com.biopower.security.UserPrincipal;
 import com.biopower.util.PlantSensorTypes;
+import com.biopower.util.SensorHeartbeat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class AiHealthService {
     private final PlantRepository plantRepository;
     private final SensorNodeRepository sensorNodeRepository;
     private final PlantAccessService plantAccessService;
+    private final SensorHeartbeat sensorHeartbeat;
 
     @Transactional
     public void analyzePlant(Long plantId) {
@@ -164,7 +166,9 @@ public class AiHealthService {
         int healthScore = aiRecommendationRepository.findFirstByPlantIdOrderByCreatedAtDesc(plantId)
                 .map(AiRecommendation::getHealthScore).orElse(85);
 
-        long activeNodes = plantNodes.stream().filter(n -> n.getStatus() == NodeStatus.ACTIVE).count();
+        long activeNodes = plantNodes.stream()
+                .filter(n -> sensorHeartbeat.effectiveStatus(n) == NodeStatus.ACTIVE)
+                .count();
         long totalNodes = plantNodes.size();
         long activeAlerts = alertRepository.countByPlantIdAndStatus(plantId, AlertStatus.ACTIVE);
         Double gasProduction = readings.getOrDefault(SensorType.GAS_FLOW,
@@ -193,7 +197,7 @@ public class AiHealthService {
     private List<SensorType> resolveVisibleSensorTypes(Plant plant, List<SensorNode> scopedNodes, boolean operatorScoped) {
         Set<SensorType> configured = PlantSensorTypes.parse(plant.getEnabledSensorTypes());
         LinkedHashSet<SensorType> nodeTypes = scopedNodes.stream()
-                .filter(node -> node.getStatus() == NodeStatus.ACTIVE)
+                .filter(node -> sensorHeartbeat.effectiveStatus(node) != NodeStatus.INACTIVE)
                 .map(SensorNode::getSensorType)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
@@ -327,10 +331,14 @@ public class AiHealthService {
     }
 
     private NodeStatus resolveDeviceStatus(List<SensorNode> nodes) {
-        if (nodes.stream().anyMatch(n -> n.getStatus() == NodeStatus.OFFLINE)) return NodeStatus.OFFLINE;
-        if (nodes.stream().anyMatch(n -> n.getStatus() == NodeStatus.FAULTY)) return NodeStatus.FAULTY;
-        if (nodes.stream().anyMatch(n -> n.getStatus() == NodeStatus.INACTIVE)) return NodeStatus.INACTIVE;
-        return NodeStatus.ACTIVE;
+        List<NodeStatus> statuses = nodes.stream()
+                .map(sensorHeartbeat::effectiveStatus)
+                .toList();
+        if (statuses.stream().anyMatch(s -> s == NodeStatus.OFFLINE)) return NodeStatus.OFFLINE;
+        if (statuses.stream().anyMatch(s -> s == NodeStatus.FAULTY)) return NodeStatus.FAULTY;
+        if (statuses.stream().anyMatch(s -> s == NodeStatus.INACTIVE)) return NodeStatus.INACTIVE;
+        if (!statuses.isEmpty() && statuses.stream().allMatch(s -> s == NodeStatus.ACTIVE)) return NodeStatus.ACTIVE;
+        return NodeStatus.OFFLINE;
     }
 
     private Map<SensorType, Double> getCurrentReadings(Long plantId, Set<Long> allowedNodeIds, List<SensorType> visibleTypes) {

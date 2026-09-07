@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box, Card, CardContent, CircularProgress, FormControl,
-  InputLabel, MenuItem, Select, Typography, IconButton, Tooltip,
+  InputLabel, MenuItem, Select, Typography, IconButton, Tooltip, Alert,
 } from '@mui/material';
 import { Fullscreen, FullscreenExit } from '@mui/icons-material';
 import { plantAPI, hmiAPI } from '../services/api';
@@ -62,16 +62,13 @@ export default function PlantHmi({ fixedPlantId, hidePlantSelector = false, embe
       return;
     }
     plantAPI.getAll().then(({ data }) => {
-      const list = data.data || [];
-      const hmiPlants = list.filter((p) => p.feedstockType?.includes('P&ID'));
-      const selectable = hmiPlants.length > 0 ? hmiPlants : list;
-      setPlants(selectable);
+      const list = (data.data || []).filter((p) => p.hmiEnabled);
+      setPlants(list);
       const fromUrl = searchParams.get('plantId');
-      if (fromUrl && selectable.some((p) => p.plantId === Number(fromUrl))) {
+      if (fromUrl && list.some((p) => p.plantId === Number(fromUrl))) {
         setSelectedPlant(Number(fromUrl));
-      } else if (selectable.length > 0) {
-        const hmiPlant = selectable.find((p) => p.feedstockType?.includes('P&ID')) || selectable[0];
-        setSelectedPlant(hmiPlant.plantId);
+      } else if (list.length > 0) {
+        setSelectedPlant(list[0].plantId);
       }
     }).finally(() => setLoading(false));
   }, [searchParams, fixedPlantId]);
@@ -142,6 +139,15 @@ export default function PlantHmi({ fixedPlantId, hidePlantSelector = false, embe
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
         <CircularProgress />
       </Box>
+    );
+  }
+
+  if (!fixedPlantId && plants.length === 0) {
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        Plant HMI is not enabled for your plants. Control Center must turn HMI on for this site
+        before it appears in the Swarm app.
+      </Alert>
     );
   }
 

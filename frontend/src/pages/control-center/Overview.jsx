@@ -13,6 +13,7 @@ const tiles = [
   { key: 'plantsAssigned', label: 'Assigned plants', path: '/plants?tab=assigned', hint: 'Sites live under a tenant' },
   { key: 'plantsUnassigned', label: 'Unassigned pool', path: '/plants?tab=unassigned', hint: 'Create then attach to a company' },
   { key: 'pendingApprovals', label: 'User approvals', path: '/approvals', hint: 'Sign-ups waiting for a tenant' },
+  { key: 'plantsHmiEnabled', label: 'HMI enabled', path: '/hmi-access', hint: 'Sites allowed to open Plant HMI' },
 ];
 
 export default function Overview() {
@@ -35,7 +36,7 @@ export default function Overview() {
       <Typography variant="h5" fontWeight={700}>Tenant onboarding</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 720 }}>
         This Control Center provisions Swarm customers at scale: company → Super Admin → plants.
-        Plant monitoring, HMI, and sensors stay in the Swarm app for that tenant.
+        Plant monitoring and sensors stay in the Swarm app. Plant HMI is shown there only after you enable it under <strong>HMI</strong>.
       </Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <Grid container spacing={2}>

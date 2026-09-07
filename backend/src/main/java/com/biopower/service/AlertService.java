@@ -144,23 +144,27 @@ public class AlertService {
 
     private void markOfflineIfStale(List<com.biopower.model.entity.SensorNode> nodes) {
         nodes.forEach(node -> {
-                    String title = "Sensor Failure - No Data";
-                    if (!alertRepository.existsByPlantIdAndTitleAndStatus(
-                            node.getPlant().getPlantId(), title, AlertStatus.ACTIVE)) {
-                        Alert alert = Alert.builder()
-                                .plantId(node.getPlant().getPlantId())
-                                .nodeId(node.getNodeId())
-                                .sensorType(node.getSensorType())
-                                .title(title)
-                                .message(String.format("No data received from %s for %d minutes",
-                                        node.getNodeName(), sensorTimeoutMinutes))
-                                .severity(AlertSeverity.CRITICAL)
-                                .build();
-                        alertRepository.save(alert);
-                        node.setStatus(NodeStatus.OFFLINE);
-                        sensorNodeRepository.save(node);
-                    }
-                });
+            if (node.getStatus() != NodeStatus.OFFLINE) {
+                node.setStatus(NodeStatus.OFFLINE);
+                sensorNodeRepository.save(node);
+                log.info("Marked node {} ({}) OFFLINE — last reading {}",
+                        node.getNodeId(), node.getNodeName(), node.getLastReadingAt());
+            }
+            String title = "Sensor Failure - No Data";
+            if (!alertRepository.existsByPlantIdAndTitleAndStatus(
+                    node.getPlant().getPlantId(), title, AlertStatus.ACTIVE)) {
+                Alert alert = Alert.builder()
+                        .plantId(node.getPlant().getPlantId())
+                        .nodeId(node.getNodeId())
+                        .sensorType(node.getSensorType())
+                        .title(title)
+                        .message(String.format("No data received from %s for %d minutes",
+                                node.getNodeName(), sensorTimeoutMinutes))
+                        .severity(AlertSeverity.CRITICAL)
+                        .build();
+                alertRepository.save(alert);
+            }
+        });
     }
 
     @Transactional(readOnly = true)

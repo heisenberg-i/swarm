@@ -12,6 +12,7 @@ import com.biopower.repository.SensorNodeRepository;
 import com.biopower.repository.SensorReadingRepository;
 import com.biopower.security.UserPrincipal;
 import com.biopower.util.PlantSensorTypes;
+import com.biopower.util.SensorHeartbeat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class SensorNodeService {
     private final SensorReadingRepository sensorReadingRepository;
     private final PlantService plantService;
     private final PlantAccessService plantAccessService;
+    private final SensorHeartbeat sensorHeartbeat;
 
     @Transactional(readOnly = true)
     public List<SensorNodeResponse> getAllNodes(UserPrincipal principal) {
@@ -120,7 +122,7 @@ public class SensorNodeService {
                 .firmwareVersion(node.getFirmwareVersion())
                 .batteryLevel(node.getBatteryLevel())
                 .signalStrength(node.getSignalStrength())
-                .status(node.getStatus())
+                .status(sensorHeartbeat.effectiveStatus(node))
                 .lastValue(lastValue)
                 .lastReadingAt(node.getLastReadingAt())
                 .createdAt(node.getCreatedAt())

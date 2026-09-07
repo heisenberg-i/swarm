@@ -151,6 +151,7 @@ public class PlantService {
                 .healthStatus(healthStatus)
                 .enabledSensorTypes(PlantSensorTypes.parse(plant.getEnabledSensorTypes()).stream()
                         .map(SensorType::name).collect(Collectors.toList()))
+                .hmiEnabled(plant.isHmiEnabled())
                 .companyId(plant.getCompany() != null ? plant.getCompany().getId() : null)
                 .companyName(plant.getCompany() != null ? plant.getCompany().getName() : null)
                 .createdAt(plant.getCreatedAt())

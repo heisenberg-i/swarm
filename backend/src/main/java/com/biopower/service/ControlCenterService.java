@@ -27,6 +27,7 @@ import com.biopower.repository.PlantRepository;
 import com.biopower.repository.SensorNodeRepository;
 import com.biopower.repository.UserRepository;
 import com.biopower.util.PlantSensorTypes;
+import com.biopower.util.SensorHeartbeat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class ControlCenterService {
     private final SensorNodeRepository sensorNodeRepository;
     private final PlantService plantService;
     private final PasswordEncoder passwordEncoder;
+    private final SensorHeartbeat sensorHeartbeat;
 
     @Transactional(readOnly = true)
     public List<CompanyResponse> listCompanies() {
@@ -90,6 +92,7 @@ public class ControlCenterService {
                 .plantsUnassigned(unassigned)
                 .plantsAssigned(plantsTotal - unassigned)
                 .pendingApprovals(countPendingApprovals())
+                .plantsHmiEnabled(plantRepository.findAll().stream().filter(Plant::isHmiEnabled).count())
                 .build();
     }
 
@@ -210,8 +213,18 @@ public class ControlCenterService {
                 .status(request.getStatus() != null ? request.getStatus() : PlantStatus.ACTIVE)
                 .enabledSensorTypes(PlantSensorTypes.serialize(
                         Set.copyOf(PlantSensorTypes.parseList(request.getEnabledSensorTypes()))))
+                .hmiEnabled(false)
                 .build();
         plant = plantRepository.save(plant);
+        return plantService.getPlantById(plant.getPlantId());
+    }
+
+    @Transactional
+    public PlantResponse setPlantHmiEnabled(Long plantId, boolean enabled) {
+        Plant plant = plantRepository.findById(plantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plant not found: " + plantId));
+        plant.setHmiEnabled(enabled);
+        plantRepository.save(plant);
         return plantService.getPlantById(plant.getPlantId());
     }
 
@@ -431,7 +444,7 @@ public class ControlCenterService {
                         .nodeId(node.getNodeId())
                         .nodeName(node.getNodeName())
                         .sensorType(node.getSensorType())
-                        .status(node.getStatus())
+                        .status(sensorHeartbeat.effectiveStatus(node))
                         .plantId(plant.getPlantId())
                         .plantName(plant.getPlantName())
                         .paired(paired)

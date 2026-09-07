@@ -3,6 +3,7 @@ package com.biopower.controller;
 import com.biopower.dto.request.ApproveUserRequest;
 import com.biopower.dto.request.AssignPlantsRequest;
 import com.biopower.dto.request.CompanyRequest;
+import com.biopower.dto.request.HmiEnabledRequest;
 import com.biopower.dto.request.PlantRequest;
 import com.biopower.dto.request.SuperAdminRequest;
 import com.biopower.dto.response.ApiResponse;
@@ -120,5 +121,14 @@ public class ControlCenterController {
     public ResponseEntity<ApiResponse<PlantResponse>> createPlant(@Valid @RequestBody PlantRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Plant created", controlCenterService.createUnassignedPlant(request)));
+    }
+
+    @PatchMapping("/plants/{id}/hmi")
+    public ResponseEntity<ApiResponse<PlantResponse>> setPlantHmi(
+            @PathVariable Long id, @Valid @RequestBody HmiEnabledRequest request) {
+        boolean enabled = Boolean.TRUE.equals(request.getEnabled());
+        return ResponseEntity.ok(ApiResponse.success(
+                enabled ? "Plant HMI enabled" : "Plant HMI disabled",
+                controlCenterService.setPlantHmiEnabled(id, enabled)));
     }
 }

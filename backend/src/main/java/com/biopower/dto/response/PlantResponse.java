@@ -24,6 +24,7 @@ public class PlantResponse {
     private Integer healthScore;
     private HealthStatus healthStatus;
     private List<String> enabledSensorTypes;
+    private boolean hmiEnabled;
     private Long companyId;
     private String companyName;
     private LocalDateTime createdAt;

@@ -16,6 +16,7 @@ import com.biopower.model.enums.SensorType;
 import com.biopower.repository.*;
 import com.biopower.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,8 +46,7 @@ public class HmiService {
     @Transactional(readOnly = true)
     public HmiDiagramResponse getDiagram(Long plantId, UserPrincipal principal) {
         plantAccessService.assertCanAccessPlant(principal, plantId);
-        Plant plant = plantRepository.findById(plantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Plant not found"));
+        Plant plant = requireHmiEnabledPlant(plantId);
         ensureEquipmentSeeded(plantId);
 
         List<HmiHotspotResponse> hotspots = equipmentRepository.findByPlantIdOrderBySequenceOrderAsc(plantId).stream()
@@ -74,6 +74,7 @@ public class HmiService {
     @Transactional(readOnly = true)
     public HmiStateResponse getState(Long plantId, UserPrincipal principal) {
         plantAccessService.assertCanAccessPlant(principal, plantId);
+        requireHmiEnabledPlant(plantId);
         ensureEquipmentSeeded(plantId);
         HmiPlantState plantState = getOrCreatePlantState(plantId);
 
@@ -168,6 +169,7 @@ public class HmiService {
     public HmiStateResponse applyCommand(Long plantId, HmiCommandRequest request, UserPrincipal principal) {
         assertCanControl(principal);
         plantAccessService.assertCanAccessPlant(principal, plantId);
+        requireHmiEnabledPlant(plantId);
         HmiEquipment equipment = equipmentRepository.findByPlantIdAndTagNo(plantId, request.getTagNo())
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found: " + request.getTagNo()));
         if (!equipment.isControllable()) {
@@ -216,6 +218,7 @@ public class HmiService {
     public HmiStateResponse applyMaster(Long plantId, HmiMasterRequest request, UserPrincipal principal) {
         assertCanControl(principal);
         plantAccessService.assertCanAccessPlant(principal, plantId);
+        requireHmiEnabledPlant(plantId);
         ensureEquipmentSeeded(plantId);
 
         HmiPlantState plantState = getOrCreatePlantState(plantId);
@@ -335,6 +338,16 @@ public class HmiService {
                 .mode(HmiControlMode.OFF)
                 .build();
         return equipmentStateRepository.save(state);
+    }
+
+    private Plant requireHmiEnabledPlant(Long plantId) {
+        Plant plant = plantRepository.findById(plantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plant not found"));
+        if (!plant.isHmiEnabled()) {
+            throw new AccessDeniedException(
+                    "Plant HMI is not enabled for this plant. Ask Control Center to enable it.");
+        }
+        return plant;
     }
 
     private HmiPlantState getOrCreatePlantState(Long plantId) {

@@ -6,7 +6,7 @@ import {
   Avatar, Menu, MenuItem, Divider, useMediaQuery, useTheme,
 } from '@mui/material';
 import {
-  Menu as MenuIcon, Business, Factory, Logout, Password, Dashboard, HowToReg,
+  Menu as MenuIcon, Business, Factory, Logout, Password, Dashboard, HowToReg, PrecisionManufacturing,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../common/Logo';
@@ -19,6 +19,7 @@ const menuItems = [
   { text: 'Tenants', icon: <Business />, path: '/companies' },
   { text: 'Plant inventory', icon: <Factory />, path: '/plants' },
   { text: 'Approvals', icon: <HowToReg />, path: '/approvals' },
+  { text: 'HMI', icon: <PrecisionManufacturing />, path: '/hmi-access' },
 ];
 
 export default function ControlCenterLayout() {

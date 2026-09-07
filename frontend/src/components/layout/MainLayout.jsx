@@ -12,7 +12,7 @@ import {
   PrecisionManufacturing, SmartToy, VpnKey,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-import { notificationAPI } from '../../services/api';
+import { notificationAPI, plantAPI } from '../../services/api';
 import Logo from '../common/Logo';
 import NovaOpFab from '../nova/NovaOpFab';
 
@@ -21,7 +21,7 @@ const NAV_BG = '#1e2430';
 
 const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
-  { text: 'Plant HMI', icon: <PrecisionManufacturing />, path: '/plant-hmi', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
+  { text: 'Plant HMI', icon: <PrecisionManufacturing />, path: '/plant-hmi', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'], requireHmi: true },
   { text: 'Plants', icon: <Factory />, path: '/plants', roles: ['SUPER_ADMIN', 'PLANT_ADMIN'] },
   { text: 'Sensor Nodes', icon: <Sensors />, path: '/sensors', roles: ['SUPER_ADMIN', 'PLANT_ADMIN'] },
   { text: 'Connect Device', icon: <BluetoothConnected />, path: '/connect-device', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
@@ -46,6 +46,15 @@ export default function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [alertCount, setAlertCount] = useState(0);
+  const [hmiAllowed, setHmiAllowed] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'CONTROL_CENTER_ADMIN') return undefined;
+    plantAPI.getAll()
+      .then(({ data }) => setHmiAllowed((data.data || []).some((p) => p.hmiEnabled)))
+      .catch(() => setHmiAllowed(false));
+    return undefined;
+  }, [user?.id, user?.role]);
 
   useEffect(() => {
     if (user?.role === 'CONTROL_CENTER_ADMIN') return undefined;
@@ -57,7 +66,11 @@ export default function MainLayout() {
     return () => clearInterval(interval);
   }, [user?.role]);
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(user?.role));
+  const filteredMenu = menuItems.filter((item) => {
+    if (!item.roles.includes(user?.role)) return false;
+    if (item.requireHmi && !hmiAllowed) return false;
+    return true;
+  });
   const currentPage = menuItems.find(item => item.path === location.pathname)?.text || 'Dashboard';
 
   const navList = (

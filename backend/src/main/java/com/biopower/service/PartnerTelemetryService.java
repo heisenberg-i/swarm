@@ -8,6 +8,7 @@ import com.biopower.model.enums.*;
 import com.biopower.repository.*;
 import com.biopower.security.PartnerPrincipal;
 import com.biopower.util.PartnerMetricCatalog;
+import com.biopower.util.SensorHeartbeat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
@@ -33,6 +34,7 @@ public class PartnerTelemetryService {
     private final SensorReadingRepository sensorReadingRepository;
     private final AlertRepository alertRepository;
     private final AiRecommendationRepository aiRecommendationRepository;
+    private final SensorHeartbeat sensorHeartbeat;
 
     @Transactional(readOnly = true)
     public PartnerHealthResponse health(PartnerPrincipal principal) {
@@ -326,7 +328,7 @@ public class PartnerTelemetryService {
                 .metricType(type.name())
                 .unit(PartnerMetricCatalog.unitFor(type))
                 .readingType(PartnerMetricCatalog.readingTypeFor(type).name())
-                .status(node.getStatus().name())
+                .status(sensorHeartbeat.effectiveStatus(node).name())
                 .firmwareVersion(node.getFirmwareVersion())
                 .lastReadingAt(node.getLastReadingAt() != null
                         ? node.getLastReadingAt().atZone(ZoneOffset.UTC).toInstant()

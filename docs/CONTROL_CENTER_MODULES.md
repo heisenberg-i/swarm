@@ -18,6 +18,7 @@ Public **Sign up** currently created an Operator with **no company**, so they ne
 | Tenants | Shipped | Company lifecycle, Super Admin, assign plants, sensor access view | Live HMI / readings |
 | Plant inventory | Shipped | Create sites, assign later | Sensor pairing |
 | **User approvals** | **Now** | Queue: signup / no-tenant users → assign tenant + role + plants → activate | Day-to-day staff edits |
+| **HMI access** | **Now** | Per-plant enable/disable. Swarm app shows Plant HMI only when CP turns it on | Live HMI / readings |
 | User directory | Next | Search all users across tenants | Mixing live telemetry |
 | Audit log | Next | Who approved, assigned plants, disabled tenants | |
 | Entitlements / seats | Later | Plan limits when selling at volume | emPOWER billing SoT |
@@ -41,3 +42,4 @@ Tenant Super Admins still add Plant Admins / Operators inside the Swarm app **Us
 2. Tenants  
 3. Plant inventory  
 4. **Approvals**
+5. **HMI** (`/hmi-access`) — enable/disable Plant HMI per plant. Do not use `/hmi` in Control Center; that URL is the static PFD folder. Tenant users see the sidebar item only when at least one of their plants is enabled.

@@ -55,6 +55,11 @@ public class Plant {
     @Column(name = "enabled_sensor_types", length = 1000)
     private String enabledSensorTypes;
 
+    /** Plant HMI in the Swarm app is visible only when Control Center enables this. */
+    @Builder.Default
+    @Column(name = "hmi_enabled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    private boolean hmiEnabled = false;
+
     @OneToMany(mappedBy = "plant", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<SensorNode> sensorNodes = new ArrayList<>();

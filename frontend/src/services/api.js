@@ -139,6 +139,7 @@ export const controlCenterAPI = {
   listPlants: () => api.get('/control-center/plants'),
   listUnassignedPlants: () => api.get('/control-center/plants/unassigned'),
   createPlant: (data) => api.post('/control-center/plants', data),
+  setPlantHmi: (id, enabled) => api.patch(`/control-center/plants/${id}/hmi`, { enabled }),
   overview: () => api.get('/control-center/overview'),
   listUsers: (queue = 'pending') => api.get('/control-center/users', { params: { queue } }),
   approveUser: (id, data) => api.post(`/control-center/users/${id}/approve`, data),

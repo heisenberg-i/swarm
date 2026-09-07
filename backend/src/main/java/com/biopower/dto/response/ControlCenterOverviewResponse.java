@@ -16,4 +16,5 @@ public class ControlCenterOverviewResponse {
     private long plantsUnassigned;
     private long plantsAssigned;
     private long pendingApprovals;
+    private long plantsHmiEnabled;
 }

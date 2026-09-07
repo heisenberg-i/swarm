@@ -249,6 +249,7 @@ export default function Help() {
         <Typography paragraph>
           The Plant HMI shows the biogas plant process flow diagram with live readings, animated pipelines,
           and block start/stop controls. Commands update server simulation state (not real PLCs in demo mode).
+          Control Center must enable HMI for the plant first; otherwise Plant HMI does not appear in the sidebar.
         </Typography>
 
         <Typography fontWeight={600} sx={{ mb: 1 }}>Open the HMI</Typography>
