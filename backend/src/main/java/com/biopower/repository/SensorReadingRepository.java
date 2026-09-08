@@ -33,6 +33,8 @@ public interface SensorReadingRepository extends JpaRepository<SensorReading, Lo
 
     Optional<SensorReading> findFirstByNodeIdOrderByRecordedAtDesc(Long nodeId);
 
+    long countByNodeIdAndRecordedAtAfter(Long nodeId, LocalDateTime since);
+
     @Query("SELECT AVG(r.value) FROM SensorReading r WHERE r.plantId = :plantId AND r.sensorType = :type " +
            "AND r.recordedAt BETWEEN :start AND :end")
     Double averageValue(@Param("plantId") Long plantId, @Param("type") SensorType type,

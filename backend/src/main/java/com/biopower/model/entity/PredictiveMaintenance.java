@@ -32,6 +32,9 @@ public class PredictiveMaintenance {
     @Column(name = "equipment_name", nullable = false)
     private String equipmentName;
 
+    @Column(name = "sensor_type", length = 50)
+    private String sensorType;
+
     @Column(name = "remaining_useful_life_days")
     private Integer remainingUsefulLifeDays;
 

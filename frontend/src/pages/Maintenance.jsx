@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, LinearProgress, FormControl, InputLabel, Select, MenuItem, CircularProgress,
+  Chip, LinearProgress, FormControl, InputLabel, Select, MenuItem, CircularProgress, Alert,
 } from '@mui/material';
 import { plantAPI, maintenanceAPI } from '../services/api';
-import { formatDate } from '../utils/constants';
+import { SENSOR_LABELS } from '../utils/constants';
 import { pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsive';
 
 export default function Maintenance({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
@@ -56,16 +56,34 @@ export default function Maintenance({ fixedPlantId, embedded = false, hidePlantS
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Equipment</TableCell><TableCell>Type</TableCell>
-                  <TableCell>Remaining Life (days)</TableCell><TableCell>Est. Failure Date</TableCell>
-                  <TableCell>Health</TableCell><TableCell>Notes</TableCell>
+                  <TableCell>Sensor</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Remaining Life (days)</TableCell>
+                  <TableCell>Est. Failure Date</TableCell>
+                  <TableCell>Health</TableCell>
+                  <TableCell>Notes</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
+                {items.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <Alert severity="info">
+                        No sensors are paired on this plant yet. Pair a hub on Connect Device — maintenance
+                        follows those live nodes, not generic pumps or blowers.
+                      </Alert>
+                    </TableCell>
+                  </TableRow>
+                )}
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{item.equipmentName}</TableCell>
-                    <TableCell><Chip label={item.equipmentType} size="small" /></TableCell>
+                    <TableCell>
+                      <Chip
+                        label={SENSOR_LABELS[item.sensorType] || item.sensorType || item.equipmentType}
+                        size="small"
+                      />
+                    </TableCell>
                     <TableCell>{item.remainingUsefulLifeDays}</TableCell>
                     <TableCell>{item.estimatedFailureDate}</TableCell>
                     <TableCell sx={{ minWidth: 150 }}>

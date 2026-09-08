@@ -12,8 +12,15 @@ import java.time.LocalDateTime;
 public class PredictiveMaintenanceResponse {
     private Long id;
     private Long plantId;
+    private Long nodeId;
     private EquipmentType equipmentType;
     private String equipmentName;
+    private String sensorType;
+    private String unit;
+    private String nodeStatus;
+    private Double lastValue;
+    private LocalDateTime lastReadingAt;
+    private String chipId;
     private Integer remainingUsefulLifeDays;
     private LocalDate estimatedFailureDate;
     private Double healthPercentage;

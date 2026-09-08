@@ -14,7 +14,7 @@ public interface PredictiveMaintenanceRepository extends JpaRepository<Predictiv
     List<PredictiveMaintenance> findByPlantId(Long plantId);
     List<PredictiveMaintenance> findByPlantIdOrderByRemainingUsefulLifeDaysAsc(Long plantId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM PredictiveMaintenance p WHERE p.plantId = :plantId")
     void deleteByPlantId(@Param("plantId") Long plantId);
 }

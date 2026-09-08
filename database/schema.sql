@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS predictive_maintenance (
     equipment_type ENUM('PUMP', 'BLOWER', 'AGITATOR', 'COMPRESSOR', 'SENSOR') NOT NULL,
     equipment_name VARCHAR(255) NOT NULL,
     remaining_useful_life_days INT,
+    sensor_type VARCHAR(50),
     estimated_failure_date DATE,
     health_percentage DOUBLE,
     notes TEXT,
