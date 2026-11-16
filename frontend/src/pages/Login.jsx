@@ -8,7 +8,7 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/common/Logo';
-import { networkErrorMessage } from '../utils/networkError';
+import { loginErrorMessage } from '../utils/networkError';
 import { loadSsoConfig, redirectToSso } from '../utils/sso';
 import { getHomeRoute } from '../utils/homeRoute';
 
@@ -84,17 +84,7 @@ export default function Login() {
       const loggedIn = await login(email, password);
       navigate(getHomeRoute(loggedIn.role));
     } catch (err) {
-      const networkMsg = networkErrorMessage(err);
-      if (networkMsg) {
-        setError(networkMsg);
-      } else if (err.response.status === 401) {
-        setError(err.response.data?.message || 'Invalid email or password');
-      } else {
-        setError(
-          err.response.data?.message
-          || `Server error (${err.response.status}). Ensure the backend is running on the host PC.`
-        );
-      }
+      setError(loginErrorMessage(err));
     }
   };
 

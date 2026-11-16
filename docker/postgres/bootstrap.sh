@@ -41,8 +41,8 @@ UPDATE flyway_schema_history
    SET checksum = -729282543
  WHERE version = '1' AND checksum = 841724909;
 UPDATE flyway_schema_history
-   SET checksum = 1381351303
- WHERE version = '2' AND checksum = -301239876;
+   SET checksum = 2127360042
+ WHERE version = '2' AND checksum IN (-301239876, 1381351303);
 SQL
 }
 

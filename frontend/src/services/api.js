@@ -1,10 +1,26 @@
 // PURPOSE: Axios API client used by non-NOVA SWARM pages.
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 
 const PRODUCTION_API = 'https://api.swarm.co.in/api';
 
+export function resolveApiBase() {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && String(envUrl).trim()) {
+    return String(envUrl).trim();
+  }
+  try {
+    if (import.meta.env.PROD && Capacitor.isNativePlatform()) {
+      return PRODUCTION_API;
+    }
+  } catch {
+    /* ignore missing Capacitor in some test/build contexts */
+  }
+  return '/api';
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PRODUCTION_API : '/api'),
+  baseURL: resolveApiBase(),
   headers: { 'Content-Type': 'application/json' },
 });
 

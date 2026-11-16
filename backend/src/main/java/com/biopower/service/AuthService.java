@@ -110,13 +110,14 @@ public class AuthService {
         if (isSaasFullyConfigured()) {
             throw new BadRequestException("Use emPOWER SaaS login at accounts.empowerapp.in");
         }
-        userRepository.findByEmail(request.getEmail().trim()).ifPresent(user -> {
+        String email = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase();
+        userRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
             if (user.getStatus() == UserStatus.PENDING) {
                 throw new BadRequestException("Your account is waiting for Control Center approval");
             }
         });
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+                new UsernamePasswordAuthenticationToken(email, request.getPassword()));
         return toAuthResponse(authentication);
     }
 

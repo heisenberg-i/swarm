@@ -36,7 +36,7 @@ Access the application at **http://localhost**
 
 ### First Control Center admin
 
-There are **no default passwords**. On a new primary deploy, set `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD` (12+ characters) for one-time Control Center admin creation. Existing documented defaults are compromised and are not seeded.
+There are **no default passwords**. On a new primary deploy, set `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD` (12+ characters) for one-time Control Center admin creation. Production migrations do not insert a usable administrator. Demo logins require `SWARM_SEED_DEMO_ACCOUNTS=true` plus `SWARM_SEED_DEMO_PASSWORD`. Existing accounts are not overwritten on restart.
 
 ## Local Development
 

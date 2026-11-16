@@ -53,6 +53,10 @@ public class BootstrapAdminInitializer implements CommandLineRunner {
             log.error("Bootstrap Control Center password is too short (minimum 12). Admin was not created.");
             return;
         }
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
+            log.error("Bootstrap email already belongs to an existing user. Refusing to overwrite that account.");
+            return;
+        }
         User admin = User.builder()
                 .name("SWARM Admin")
                 .email(email)

@@ -1,5 +1,8 @@
--- Seed tenant profiles, migrate H2 application rows, attach Timescale devices to plants.
+-- Seed tenant profiles and attach Timescale devices to plants.
 -- Does not insert into sensor_readings / sensor_messages (telemetry already present).
+-- Does not create login accounts. The first Control Center admin is provisioned from
+-- SWARM_BOOTSTRAP_ADMIN_EMAIL / SWARM_BOOTSTRAP_ADMIN_PASSWORD when none exists.
+-- Demo tenants and demo logins are opt-in (SWARM_SEED_DEMO_ACCOUNTS=true).
 
 INSERT INTO tenant_profiles (tenant_id, status, updated_at)
 SELECT t.tenant_id, 'ACTIVE', NOW()
@@ -8,62 +11,11 @@ WHERE NOT EXISTS (
     SELECT 1 FROM tenant_profiles p WHERE p.tenant_id = t.tenant_id
 );
 
--- H2 companies (abc, Rebuild Demo Co) as additional tenants. Existing plant_01 tenants stay.
-INSERT INTO tenants (tenant_id, tenant_name, metadata, created_at)
-VALUES
-    ('a11ce000-0000-4000-8000-000000000001', 'abc',
-     '{"migrated_from":"h2","legacy_company_id":1}'::jsonb,
-     TIMESTAMPTZ '2026-11-07 14:05:31.192722+05:30'),
-    ('a11ce000-0000-4000-8000-000000000002', 'Rebuild Demo Co',
-     '{"migrated_from":"h2","legacy_company_id":2}'::jsonb,
-     TIMESTAMPTZ '2026-11-07 17:21:45.15905+05:30')
-ON CONFLICT (tenant_id) DO NOTHING;
-
-INSERT INTO tenant_profiles (tenant_id, status, updated_at)
-VALUES
-    ('a11ce000-0000-4000-8000-000000000001', 'ACTIVE', TIMESTAMP '2026-11-07 14:05:31.192753'),
-    ('a11ce000-0000-4000-8000-000000000002', 'ACTIVE', TIMESTAMP '2026-11-07 17:21:45.159097')
-ON CONFLICT (tenant_id) DO NOTHING;
-
-INSERT INTO plants (
-    plant_id, plant_name, plant_type, location, capacity, feedstock_type,
-    installation_date, status, enabled_sensor_types, hmi_enabled, tenant_id,
-    created_at, updated_at
-) OVERRIDING SYSTEM VALUE VALUES
-    (1, 'we', 'ORGANIC_WASTE', NULL, NULL, NULL, NULL, 'ACTIVE', NULL, FALSE,
-     'a11ce000-0000-4000-8000-000000000001',
-     TIMESTAMP '2026-11-07 14:06:05.43544', TIMESTAMP '2026-11-07 17:14:12.976141'),
-    (2, 'Rebuild Demo Plant', 'BIOGAS', 'Lab', 100.0, 'Organic', NULL, 'ACTIVE', NULL, TRUE,
-     'a11ce000-0000-4000-8000-000000000002',
-     TIMESTAMP '2026-11-07 17:21:45.619477', TIMESTAMP '2026-11-07 17:21:45.777249')
-ON CONFLICT (plant_id) DO NOTHING;
-
-SELECT setval(pg_get_serial_sequence('plants', 'plant_id'), GREATEST((SELECT MAX(plant_id) FROM plants), 1));
-
 -- One plant per existing Timescale tenant so live methane readings are queryable.
 INSERT INTO plants (plant_name, plant_type, location, status, hmi_enabled, tenant_id, created_at, updated_at)
 SELECT t.tenant_name, 'BIOGAS', 'Timescale telemetry', 'ACTIVE', FALSE, t.tenant_id, NOW(), NOW()
 FROM tenants t
 WHERE NOT EXISTS (SELECT 1 FROM plants p WHERE p.tenant_id = t.tenant_id);
-
-INSERT INTO users (
-    id, name, email, mobile, password, role, status, tenant_id, created_at
-) OVERRIDING SYSTEM VALUE VALUES
-    (1, 'SWARM Admin', 'swarm.nfi@gmail.com', NULL,
-     '$2a$12$R82tOQyyeYgCvJA8mbIqyuygwLcSaCeVuMSwE0lTZuE.rN972Hogq',
-     'CONTROL_CENTER_ADMIN', 'ACTIVE', NULL, TIMESTAMP '2026-11-07 13:57:51.328769'),
-    (2, 'abcd', 'abc@gmail.com', '9663036755',
-     '$2a$12$u32DdmqXhm3tNzMdCyK1tePqAokCfD28qYT.0XFuCMtU5rLzbZjmK',
-     'SUPER_ADMIN', 'ACTIVE', 'a11ce000-0000-4000-8000-000000000001',
-     TIMESTAMP '2026-11-07 14:05:53.526921'),
-    (3, 'Rebuild Demo Admin', 'rebuild.demo@swarm.local', '9999999999',
-     '$2a$12$KWal9bW2CHjZ74zfvcD0yOleilzgfvoFLAjf7yQnEuYCDtn9asDRi',
-     'SUPER_ADMIN', 'ACTIVE', 'a11ce000-0000-4000-8000-000000000002',
-     TIMESTAMP '2026-11-07 17:21:45.552291')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO user_plants (user_id, plant_id) VALUES (2, 1), (3, 2)
-ON CONFLICT DO NOTHING;
 
 INSERT INTO device_registry (
     device_pk, plant_id, device_name, device_kind, lifecycle, legacy_compat, config_version, updated_at
@@ -131,7 +83,7 @@ VALUES
 ON CONFLICT (setting_key) DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('plants', 'plant_id'), GREATEST((SELECT MAX(plant_id) FROM plants), 1));
-SELECT setval(pg_get_serial_sequence('users', 'id'), GREATEST((SELECT MAX(id) FROM users), 1));
+SELECT setval(pg_get_serial_sequence('users', 'id'), GREATEST(COALESCE((SELECT MAX(id) FROM users), 1), 1));
 SELECT setval(pg_get_serial_sequence('partner_organizations', 'id'), GREATEST((SELECT MAX(id) FROM partner_organizations), 1));
 SELECT setval(pg_get_serial_sequence('partner_api_keys', 'id'), GREATEST((SELECT MAX(id) FROM partner_api_keys), 1));
 SELECT setval(pg_get_serial_sequence('sensor_nodes', 'node_id'), GREATEST(COALESCE((SELECT MAX(node_id) FROM sensor_nodes), 1), 1));

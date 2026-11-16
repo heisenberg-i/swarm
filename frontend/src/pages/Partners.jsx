@@ -8,10 +8,9 @@ import {
 } from '@mui/material';
 import { Add, ContentCopy, Delete, Edit, Link as LinkIcon, Refresh, VpnKey } from '@mui/icons-material';
 import axios from 'axios';
-import { partnerAPI, plantAPI } from '../services/api';
+import { partnerAPI, plantAPI, resolveApiBase } from '../services/api';
 
-const PRODUCTION_API = 'https://api.swarm.co.in/api';
-const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? PRODUCTION_API : '/api');
+const apiBase = resolveApiBase();
 
 const emptyOrgForm = { name: '', externalOrgId: '', plantIds: [] };
 

@@ -18,3 +18,43 @@ export function networkErrorMessage(err) {
   }
   return 'Cannot reach the server. Check that you are using this site\'s address and that the API is running.';
 }
+
+export function responseMessage(err) {
+  const data = err?.response?.data;
+  if (typeof data === 'string' && data.trim()) {
+    return data;
+  }
+  if (data && typeof data === 'object' && data.message) {
+    return data.message;
+  }
+  return null;
+}
+
+export function loginErrorMessage(err) {
+  const networkMsg = networkErrorMessage(err);
+  if (networkMsg) {
+    return networkMsg;
+  }
+  const status = err.response?.status;
+  const apiMessage = responseMessage(err);
+  if (status === 401) {
+    return apiMessage && !/^unauthorized/i.test(apiMessage) ? apiMessage : 'Invalid email or password';
+  }
+  if (status === 403) {
+    const text = (apiMessage || '').toLowerCase();
+    if (text.includes('cors')) {
+      return 'This browser origin is blocked by CORS. Open SWARM at the same host the API allows, or set CORS_ORIGINS / SWARM_CORS_ALLOW_ANY_HTTP.';
+    }
+    return apiMessage || 'Access denied.';
+  }
+  if (status === 429) {
+    return apiMessage || 'Too many login attempts. Wait a minute and try again.';
+  }
+  if (status === 400) {
+    return apiMessage || 'Login request was rejected.';
+  }
+  if (status >= 500) {
+    return 'The API is reachable but reported a server error. Try again, or check backend logs.';
+  }
+  return apiMessage || `Request failed (${status}).`;
+}

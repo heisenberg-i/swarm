@@ -11,9 +11,10 @@ docker compose up -d --build
 - Frontend: http://localhost
 - API: http://localhost:8080/api
 - PostgreSQL is **not** published on the host. It lives on the `swarm` Docker network as `postgres:5432`.
-- First start of an **empty** database creates the four core tables (`tenants`, `devices`, `sensor_messages`, `sensor_readings` hypertable) from `database/swarm-core-init.sql`. Flyway then applies `V1`/`V2`.
-- If `backups/swarm_pg_*.dump` is present and the database is empty, that dump is restored and `database/reset-non-nova.sql` runs once.
-- Later starts skip bootstrap work (marker file in the `swarm_bootstrap_state` volume).
+- First start of an **empty** database creates the four core tables (`tenants`, `devices`, `sensor_messages`, `sensor_readings` hypertable) from `database/swarm-core-init.sql`. Flyway then applies `V1`/`V2`. V2 does **not** insert login accounts.
+- Set `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD` so the first Control Center admin is created when none exists.
+- If `backups/swarm_pg_*.dump` is present and the database is empty, that dump is restored and `database/reset-non-nova.sql` runs once. Existing administrators in that dump are kept.
+- Later starts skip schema init (marker file in the `swarm_bootstrap_state` volume). Checksum alignment still runs and does not modify user rows.
 
 ## Persistent storage
 
@@ -65,7 +66,22 @@ If devices must publish MQTT from outside Docker, add a **non-conflicting** host
 
 ## Flyway
 
-`SPRING_FLYWAY_VALIDATE_ON_MIGRATE` is `true`. Applied checksums for `V1` and `V2` were aligned to the current migration files in the JAR. Do not edit applied migration files and do not `flyway repair` unless checksums are verified again.
+`SPRING_FLYWAY_VALIDATE_ON_MIGRATE` is `true`. V1 and V2 are already applied on restored and current databases. The files were later corrected (invalid `# PURPOSE` header, then removal of hardcoded administrator inserts). On startup the backend updates **only** these known legacy checksums, then validates:
+
+| Version | Legacy checksums | Current file |
+|---------|------------------|--------------|
+| V1 | `841724909` | `-729282543` |
+| V2 | `-301239876`, `1381351303` | `2127360042` |
+
+Applied migrations are not re-executed. Existing users and passwords are unchanged. Do not run a blanket `flyway repair`.
+
+## Authentication and CORS
+
+The API context path is `/api`. Compose publishes the backend on host `8080` and the frontend nginx on host `80`, which proxies `/api/` to the backend. Sign-in is `POST /api/auth/login`.
+
+A previous HTTP **403** on that path with body `Invalid CORS request` happened when the UI was opened at a LAN origin such as `http://192.168.29.229` while `CORS_ORIGINS` listed only localhost. `SWARM_CORS_ALLOW_ANY_HTTP` defaults to `true` so those origins work. Set it `false` and list exact origins in `CORS_ORIGINS` to lock down.
+
+The frontend production image is built with `VITE_API_URL=/api` so the browser stays same-origin through nginx. Do not invent a backend `/` route; a 404 there is expected.
 
 ## Restart
 
