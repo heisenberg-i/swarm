@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (SignupRequest).
 package com.biopower.dto.request;
 
 import jakarta.validation.constraints.Email;

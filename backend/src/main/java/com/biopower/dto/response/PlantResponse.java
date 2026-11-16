@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (PlantResponse).
 package com.biopower.dto.response;
 
 import com.biopower.model.enums.*;
@@ -7,6 +8,7 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -25,7 +27,7 @@ public class PlantResponse {
     private HealthStatus healthStatus;
     private List<String> enabledSensorTypes;
     private boolean hmiEnabled;
-    private Long companyId;
+    private UUID companyId;
     private String companyName;
     private LocalDateTime createdAt;
 }

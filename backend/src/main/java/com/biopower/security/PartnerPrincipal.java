@@ -1,3 +1,4 @@
+// PURPOSE: Authentication/authorization component for SWARM API security.
 package com.biopower.security;
 
 import lombok.Getter;
@@ -67,6 +68,13 @@ public class PartnerPrincipal implements Authentication {
     }
 
     public boolean canAccessPlant(Long plantId) {
-        return allowedPlantIds == null || allowedPlantIds.isEmpty() || allowedPlantIds.contains(plantId);
+        if (plantId == null || allowedPlantIds == null || allowedPlantIds.isEmpty()) {
+            return false;
+        }
+        return allowedPlantIds.contains(plantId);
+    }
+
+    public boolean hasPlantAllowList() {
+        return allowedPlantIds != null && !allowedPlantIds.isEmpty();
     }
 }

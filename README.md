@@ -1,3 +1,4 @@
+# PURPOSE: SWARM project file: README.md
 # BIOPOWER AI-IoT Plant Health Monitoring System
 
 Production-ready web application for monitoring Biogas, Bio-CNG, Sanitation, Organic Waste Treatment, and Waste-to-Energy plants.
@@ -18,23 +19,24 @@ Production-ready web application for monitoring Biogas, Bio-CNG, Sanitation, Org
 |-------|-----------|
 | Frontend | React 18, Material UI, Recharts, Axios |
 | Backend | Spring Boot 3, Java 17, JWT, Maven |
-| Database | MySQL 8 |
+| Database | PostgreSQL 16 + TimescaleDB |
 | IoT | MQTT, REST API |
 | Deployment | Docker, Nginx |
 
 ## Quick Start (Docker)
 
 ```bash
-docker-compose up -d
+cp .env.example .env
+docker compose up -d --build
 ```
+
+Details: [docs/DOCKER.md](docs/DOCKER.md).
 
 Access the application at **http://localhost**
 
-### Default Credentials
+### First Control Center admin
 
-| Role | Email | Password |
-|------|-------|----------|
-| Control Center Admin | swarm.nfi@gmail.com | Swarm@2026 |
+There are **no default passwords**. On a new primary deploy, set `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD` (12+ characters) for one-time Control Center admin creation. Existing documented defaults are compromised and are not seeded.
 
 ## Local Development
 
@@ -49,7 +51,9 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-API runs at `http://localhost:8080/api`
+API runs at `http://localhost:8081/api` with `SPRING_PROFILES_ACTIVE=dev`.
+Set `DB_PASSWORD` (and optionally `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`) before starting.
+The application database is PostgreSQL 16 + TimescaleDB (`swarm` on port 5433). MySQL and H2 are not used.
 
 ### Frontend
 

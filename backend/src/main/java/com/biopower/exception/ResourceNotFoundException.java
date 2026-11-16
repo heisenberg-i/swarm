@@ -1,3 +1,4 @@
+// PURPOSE: API exception type for SWARM error handling.
 package com.biopower.exception;
 
 import org.springframework.http.HttpStatus;

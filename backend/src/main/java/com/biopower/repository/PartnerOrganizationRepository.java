@@ -1,3 +1,4 @@
+// PURPOSE: Spring Data access for SWARM PartnerOrganization persistence.
 package com.biopower.repository;
 
 import com.biopower.model.entity.PartnerOrganization;

@@ -1,3 +1,4 @@
+// PURPOSE: JPA entity mapping for SWARM table/fields used by PartnerOrganization.
 package com.biopower.model.entity;
 
 import jakarta.persistence.*;

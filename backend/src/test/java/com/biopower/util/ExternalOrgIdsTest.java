@@ -1,3 +1,4 @@
+// PURPOSE: Automated test covering SWARM ExternalOrgIdsTest.
 package com.biopower.util;
 
 import org.junit.jupiter.api.Test;

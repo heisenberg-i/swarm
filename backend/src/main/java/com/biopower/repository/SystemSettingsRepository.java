@@ -1,3 +1,4 @@
+// PURPOSE: Spring Data access for SWARM SystemSettings persistence.
 package com.biopower.repository;
 
 import com.biopower.model.entity.SystemSettings;

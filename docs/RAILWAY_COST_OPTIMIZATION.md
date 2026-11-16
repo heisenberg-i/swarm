@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Railway Light Standby — Cost Optimization
 
 **When to use:** Raspberry Pi is primary (`SWARM_DEPLOYMENT_ROLE=primary`). Railway is warm backup but should cost less than full 24/7 traffic serving.

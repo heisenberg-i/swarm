@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (HmiHotspotResponse).
 package com.biopower.dto.response;
 
 import lombok.Builder;

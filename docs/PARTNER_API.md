@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # SWARM Partner API (emPOWER Integration)
 
 **Production base URL:** `https://api.swarm.co.in/api/partner/v1`  

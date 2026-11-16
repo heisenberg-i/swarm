@@ -1,3 +1,4 @@
+// PURPOSE: Spring Boot configuration/startup component for SWARM.
 package com.biopower.config;
 
 import com.biopower.repository.PlantRepository;

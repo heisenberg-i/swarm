@@ -1,3 +1,4 @@
+// PURPOSE: JPA entity mapping for SWARM table/fields used by SensorNode.
 package com.biopower.model.entity;
 
 import com.biopower.model.enums.NodeStatus;

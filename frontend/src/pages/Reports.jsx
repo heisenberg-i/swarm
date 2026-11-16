@@ -1,11 +1,14 @@
+// PURPOSE: SWARM plant-app page: Reports.
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Grid, CircularProgress,
+  FormControl, InputLabel, Select,
 } from '@mui/material';
 import { Add, Download } from '@mui/icons-material';
 import { reportAPI, plantAPI } from '../services/api';
 import { formatDate } from '../utils/constants';
+import { pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsive';
 
 const REPORT_TYPES = ['DAILY', 'WEEKLY', 'MONTHLY', 'PLANT_SUMMARY', 'GAS_PRODUCTION', 'ALERTS', 'PLANT_HEALTH'];
 const FORMATS = ['PDF', 'EXCEL', 'CSV'];
@@ -14,33 +17,63 @@ export default function Reports({ fixedPlantId, embedded = false, hidePlantSelec
   const [reports, setReports] = useState([]);
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPlant, setSelectedPlant] = useState(fixedPlantId || '');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ plantId: fixedPlantId || '', reportType: 'DAILY', format: 'PDF' });
 
-  const loadReports = () => {
-    reportAPI.getAll(fixedPlantId || undefined).then(({ data }) => setReports(data.data || [])).finally(() => setLoading(false));
+  const loadReports = (plantId) => {
+    if (!plantId) {
+      setReports([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    reportAPI.getAll(plantId).then(({ data }) => setReports(data.data || [])).finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    loadReports();
     if (fixedPlantId) {
+      setSelectedPlant(Number(fixedPlantId));
       plantAPI.getById(fixedPlantId).then(({ data }) => setPlants([data.data])).catch(() => {});
       return;
     }
-    plantAPI.getAll().then(({ data }) => setPlants(data.data || []));
+    plantAPI.getAll().then(({ data }) => {
+      const list = data.data || [];
+      setPlants(list);
+      if (list.length > 0) setSelectedPlant(list[0].plantId);
+    });
   }, [fixedPlantId]);
 
+  useEffect(() => {
+    if (!selectedPlant) return;
+    setForm((prev) => ({ ...prev, plantId: selectedPlant }));
+    loadReports(selectedPlant);
+  }, [selectedPlant]);
+
   const handleGenerate = async () => {
-    await reportAPI.generate({ ...form, plantId: form.plantId ? Number(form.plantId) : null });
+    if (!form.plantId) return;
+    await reportAPI.generate({ ...form, plantId: Number(form.plantId) });
     setDialogOpen(false);
-    loadReports();
+    loadReports(form.plantId);
   };
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, flexWrap: 'wrap', gap: 2, mb: 3 }}>
-        {!embedded && <Typography variant="h5" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>Report Management</Typography>}
-        <Button variant="contained" startIcon={<Add />} onClick={() => setDialogOpen(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>Generate Report</Button>
+      <Box sx={pageHeaderRow}>
+        {!embedded && <Typography variant="h5" sx={pageTitleSx}>Report Management</Typography>}
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, width: { xs: '100%', sm: 'auto' } }}>
+          {!hidePlantSelector && (
+            <FormControl size="small" sx={responsiveSelect}>
+              <InputLabel>Plant</InputLabel>
+              <Select value={selectedPlant} label="Plant" onChange={(e) => setSelectedPlant(e.target.value)}>
+                {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
+              </Select>
+            </FormControl>
+          )}
+          <Button variant="contained" startIcon={<Add />} onClick={() => setDialogOpen(true)} disabled={!selectedPlant}>
+            Generate Report
+          </Button>
+        </Box>
       </Box>
 
       <Card>
@@ -76,8 +109,7 @@ export default function Reports({ fixedPlantId, embedded = false, hidePlantSelec
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
-              <TextField fullWidth select label="Plant (optional)" value={form.plantId} onChange={(e) => setForm({ ...form, plantId: e.target.value })}>
-                <MenuItem value="">All Plants</MenuItem>
+              <TextField fullWidth select label="Plant" value={form.plantId} onChange={(e) => setForm({ ...form, plantId: e.target.value })}>
                 {plants.map((p) => <MenuItem key={p.plantId} value={p.plantId}>{p.plantName}</MenuItem>)}
               </TextField>
             </Grid>
@@ -95,7 +127,7 @@ export default function Reports({ fixedPlantId, embedded = false, hidePlantSelec
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleGenerate}>Generate</Button>
+          <Button variant="contained" onClick={handleGenerate} disabled={!form.plantId}>Generate</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (SsoCallbackRequest).
 package com.biopower.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

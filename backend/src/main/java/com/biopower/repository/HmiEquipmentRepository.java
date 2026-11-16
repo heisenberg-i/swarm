@@ -1,3 +1,4 @@
+// PURPOSE: Spring Data access for SWARM HmiEquipment persistence.
 package com.biopower.repository;
 
 import com.biopower.model.entity.HmiEquipment;

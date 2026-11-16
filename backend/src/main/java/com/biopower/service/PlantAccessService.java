@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM plantaccess business rules.
 package com.biopower.service;
 
 import com.biopower.model.entity.Plant;

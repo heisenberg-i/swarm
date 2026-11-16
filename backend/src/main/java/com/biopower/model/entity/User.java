@@ -1,3 +1,4 @@
+// PURPOSE: JPA entity mapping for SWARM table/fields used by User.
 package com.biopower.model.entity;
 
 import com.biopower.model.enums.UserRole;
@@ -47,7 +48,7 @@ public class User {
     private UserStatus status = UserStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
+    @JoinColumn(name = "tenant_id")
     private Company company;
 
     @ManyToMany(fetch = FetchType.LAZY)

@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Cloud agent handoff — SWARM Android (Capacitor)
 
 **Status:** Production plan phases 0–4 implemented; debug APK built  

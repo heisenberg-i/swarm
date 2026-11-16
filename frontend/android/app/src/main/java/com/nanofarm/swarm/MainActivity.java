@@ -1,3 +1,4 @@
+// PURPOSE: SWARM project file: MainActivity.java
 package com.nanofarm.swarm;
 
 import com.getcapacitor.BridgeActivity;

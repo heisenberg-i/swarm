@@ -1,3 +1,4 @@
+# PURPOSE: SWARM project file .gitignore.
 # Dependencies
 node_modules/
 target/
@@ -31,8 +32,11 @@ reports/
 # Docker volumes
 mysql_data/
 
-# Local H2 database files
+# Local H2 database files (legacy; PostgreSQL is the application database)
 backend/data/
+
+# PostgreSQL dumps
+backups/
 
 # NOVA reference packs (integrated into app; keep out of git)
 nova-op-swarm-pack-*.zip

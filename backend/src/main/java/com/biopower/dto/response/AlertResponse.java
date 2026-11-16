@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (AlertResponse).
 package com.biopower.dto.response;
 
 import com.biopower.model.enums.AlertSeverity;

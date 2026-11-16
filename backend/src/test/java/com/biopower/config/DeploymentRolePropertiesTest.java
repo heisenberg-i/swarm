@@ -1,3 +1,4 @@
+// PURPOSE: Automated test covering SWARM DeploymentRolePropertiesTest.
 package com.biopower.config;
 
 import org.junit.jupiter.api.Test;

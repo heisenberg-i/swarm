@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (EspStatusSnapshot).
 package com.biopower.dto.request;
 
 import lombok.Data;

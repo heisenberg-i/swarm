@@ -1,3 +1,4 @@
+// PURPOSE: Axios API client used by non-NOVA SWARM pages.
 import axios from 'axios';
 
 const PRODUCTION_API = 'https://api.swarm.co.in/api';
@@ -74,6 +75,13 @@ export const deviceAPI = {
   espInfo: (ip) => api.get('/devices/esp/info', { params: { ip } }),
   espStatus: (ip, password) => api.get('/devices/esp/status', { params: { ip, password } }),
   espConfigure: (ip, password, config) => api.post('/devices/esp/configure', config, { params: { ip, password } }),
+};
+
+export const fieldDeviceAPI = {
+  list: (plantId) => api.get('/field-devices', { params: plantId ? { plantId } : {} }),
+  get: (id) => api.get(`/field-devices/${id}`),
+  upsertChannel: (id, data) => api.put(`/field-devices/${id}/channels`, data),
+  rotateSecret: (id) => api.post(`/field-devices/${id}/rotate-secret`),
 };
 
 export const dashboardAPI = {

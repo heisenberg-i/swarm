@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Alerts.
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -7,6 +8,7 @@ import { CheckCircle, DoneAll } from '@mui/icons-material';
 import { alertAPI, plantAPI } from '../services/api';
 import { formatDate } from '../utils/constants';
 import { pageTitleSx, responsiveSelect } from '../utils/responsive';
+import EmptyState from '../components/common/EmptyState';
 
 export default function Alerts({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const [plants, setPlants] = useState([]);
@@ -14,32 +16,49 @@ export default function Alerts({ fixedPlantId, embedded = false, hidePlantSelect
   const [alerts, setAlerts] = useState([]);
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [plantsLoaded, setPlantsLoaded] = useState(!!fixedPlantId);
 
   const statuses = ['ACTIVE', 'ACKNOWLEDGED', 'RESOLVED'];
 
   useEffect(() => {
     if (fixedPlantId) {
       setSelectedPlant(Number(fixedPlantId));
+      setPlantsLoaded(true);
       return;
     }
-    plantAPI.getAll().then(({ data }) => {
-      const list = data.data || [];
-      setPlants(list);
-      const pairedPlant = sessionStorage.getItem('dashboardPlantId');
-      if (pairedPlant && list.some((p) => p.plantId === Number(pairedPlant))) {
-        setSelectedPlant(Number(pairedPlant));
-        sessionStorage.removeItem('dashboardPlantId');
-      } else if (list.length > 0) {
-        setSelectedPlant(list[0].plantId);
-      }
-    });
+    plantAPI.getAll()
+      .then(({ data }) => {
+        const list = data.data || [];
+        setPlants(list);
+        const pairedPlant = sessionStorage.getItem('dashboardPlantId');
+        if (pairedPlant && list.some((p) => p.plantId === Number(pairedPlant))) {
+          setSelectedPlant(Number(pairedPlant));
+          sessionStorage.removeItem('dashboardPlantId');
+        } else if (list.length > 0) {
+          setSelectedPlant(list[0].plantId);
+        }
+      })
+      .catch(() => setLoadError('Unable to load plants.'))
+      .finally(() => setPlantsLoaded(true));
   }, [fixedPlantId]);
 
   const loadAlerts = () => {
-    if (!selectedPlant) return;
+    if (!selectedPlant) {
+      setAlerts([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     alertAPI.getAll({ plantId: selectedPlant, status: statuses[tab] })
-      .then(({ data }) => setAlerts(data.data || []))
+      .then(({ data }) => {
+        setAlerts(data.data || []);
+        setLoadError('');
+      })
+      .catch(() => {
+        setAlerts([]);
+        setLoadError('Unable to load alerts.');
+      })
       .finally(() => setLoading(false));
   };
 
@@ -61,7 +80,16 @@ export default function Alerts({ fixedPlantId, embedded = false, hidePlantSelect
     <Box>
       {!embedded && <Typography variant="h5" sx={{ mb: 3, ...pageTitleSx }}>Alert Management</Typography>}
 
-      {!hidePlantSelector && (
+      {!plantsLoaded ? (
+        <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
+      ) : !selectedPlant && (
+        <EmptyState
+          title="No plants to show alerts for"
+          description="Alerts appear after a plant is assigned to your account."
+        />
+      )}
+
+      {!hidePlantSelector && plants.length > 0 && (
         <FormControl sx={{ ...responsiveSelect, mb: 2 }} size="small">
           <InputLabel>Plant</InputLabel>
           <Select
@@ -80,6 +108,13 @@ export default function Alerts({ fixedPlantId, embedded = false, hidePlantSelect
         <Tab label="Active" /><Tab label="Acknowledged" /><Tab label="Resolved" />
       </Tabs>
 
+      {loadError && (
+        <EmptyState
+          title="Alerts unavailable"
+          description={loadError}
+        />
+      )}
+
       <Card>
         {loading ? <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box> : (
           <TableContainer>
@@ -92,7 +127,9 @@ export default function Alerts({ fixedPlantId, embedded = false, hidePlantSelect
               </TableHead>
               <TableBody>
                 {alerts.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} align="center">No alerts found</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} align="center">
+                    No alerts in this state. The plant is operating without open incidents.
+                  </TableCell></TableRow>
                 ) : alerts.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell>{a.plantName}</TableCell>

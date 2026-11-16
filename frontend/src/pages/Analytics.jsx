@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Analytics.
 import { useState, useEffect, useMemo } from 'react';
 import {
   Box, Typography, Card, CardContent, FormControl, InputLabel, Select, MenuItem,
@@ -6,6 +7,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { plantAPI, dashboardAPI } from '../services/api';
 import { SENSOR_LABELS, getSensorTypesForPlant } from '../utils/constants';
+import EmptyState from '../components/common/EmptyState';
 import { subHours, subDays, subWeeks, subMonths, format } from 'date-fns';
 
 const chartColors = ['#0066CC', '#00A86B', '#DC3545', '#FFC107', '#6f42c1'];
@@ -17,6 +19,7 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
   const [sensorType, setSensorType] = useState('TEMPERATURE');
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (fixedPlantId) {
@@ -59,6 +62,10 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
         value: r.value,
       }));
       setChartData(formatted);
+      setLoadError('');
+    }).catch(() => {
+      setChartData([]);
+      setLoadError('Unable to load analytics for this plant.');
     }).finally(() => setLoading(false));
   }, [selectedPlant, range, sensorType]);
 
@@ -98,7 +105,22 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
       <Card>
         <CardContent>
           <Typography variant="h6" sx={{ mb: 2 }}>{SENSOR_LABELS[sensorType]} Trend</Typography>
-          {loading ? <CircularProgress /> : (
+          {!selectedPlant ? (
+            <EmptyState
+              title="No plant selected"
+              description="Assign a plant to view sensor trends."
+            />
+          ) : loading ? <CircularProgress /> : loadError ? (
+            <EmptyState
+              title="Analytics unavailable"
+              description={loadError}
+            />
+          ) : chartData.length === 0 ? (
+            <EmptyState
+              title="No readings in this range"
+              description="Trends appear after devices ingest telemetry for the selected sensor."
+            />
+          ) : (
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />

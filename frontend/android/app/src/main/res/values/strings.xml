@@ -1,4 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
+<!-- PURPOSE: SWARM project file: strings.xml -->
 <resources>
     <string name="app_name">SWARM</string>
     <string name="title_activity_main">SWARM</string>

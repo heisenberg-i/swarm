@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # emPOWER SaaS Centralized Auth — SWARM Implementation
 
 **Audience:** SWARM + emPOWER teams  

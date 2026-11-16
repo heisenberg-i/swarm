@@ -1,3 +1,4 @@
+// PURPOSE: Holds JWT session and role helpers for the React app.
 import { createContext, useContext, useState, useCallback } from 'react';
 import { authAPI } from '../services/api';
 import { isNativeApp } from '../utils/networkError';

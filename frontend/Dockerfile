@@ -1,3 +1,4 @@
+# PURPOSE: Multi-stage production image for the SWARM React UI (nginx).
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./

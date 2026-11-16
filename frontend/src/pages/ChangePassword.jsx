@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: ChangePassword.
 import { useState } from 'react';
 import { Box, Card, CardContent, TextField, Button, Typography, Alert } from '@mui/material';
 import { authAPI } from '../services/api';

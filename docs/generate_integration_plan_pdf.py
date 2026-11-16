@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 """Generate swarm.co.in Platform Master Integration Plan PDF."""
 from fpdf import FPDF
 from datetime import date

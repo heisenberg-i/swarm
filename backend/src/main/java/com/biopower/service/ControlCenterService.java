@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM controlcenter business rules.
 package com.biopower.service;
 
 import com.biopower.dto.request.ApproveUserRequest;
@@ -23,7 +24,9 @@ import com.biopower.model.enums.PlantStatus;
 import com.biopower.model.enums.UserRole;
 import com.biopower.model.enums.UserStatus;
 import com.biopower.repository.CompanyRepository;
+import com.biopower.repository.DeviceRepository;
 import com.biopower.repository.PlantRepository;
+import com.biopower.repository.SensorMessageRepository;
 import com.biopower.repository.SensorNodeRepository;
 import com.biopower.repository.UserRepository;
 import com.biopower.util.PlantSensorTypes;
@@ -37,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,6 +51,8 @@ public class ControlCenterService {
     private final UserRepository userRepository;
     private final PlantRepository plantRepository;
     private final SensorNodeRepository sensorNodeRepository;
+    private final DeviceRepository deviceRepository;
+    private final SensorMessageRepository sensorMessageRepository;
     private final PlantService plantService;
     private final PasswordEncoder passwordEncoder;
     private final SensorHeartbeat sensorHeartbeat;
@@ -70,7 +76,7 @@ public class ControlCenterService {
     }
 
     @Transactional
-    public CompanyResponse setCompanyStatus(Long id, CompanyStatus status) {
+    public CompanyResponse setCompanyStatus(UUID id, CompanyStatus status) {
         Company company = findCompany(id);
         company.setStatus(status);
         return toCompanyResponse(companyRepository.save(company));
@@ -97,7 +103,7 @@ public class ControlCenterService {
     }
 
     @Transactional(readOnly = true)
-    public CompanyDetailResponse getCompany(Long id) {
+    public CompanyDetailResponse getCompany(UUID id) {
         Company company = findCompany(id);
         User superAdmin = userRepository.findByCompanyAndRole(company, UserRole.SUPER_ADMIN).orElse(null);
         List<PlantResponse> plantResponses = plantRepository.findByCompany(company).stream()
@@ -127,7 +133,7 @@ public class ControlCenterService {
     }
 
     @Transactional
-    public UserResponse createSuperAdmin(Long companyId, SuperAdminRequest request) {
+    public UserResponse createSuperAdmin(UUID companyId, SuperAdminRequest request) {
         Company company = findCompany(companyId);
         if (company.getStatus() == CompanyStatus.DISABLED) {
             throw new BadRequestException("Company is disabled");
@@ -155,7 +161,7 @@ public class ControlCenterService {
     }
 
     @Transactional
-    public CompanyDetailResponse assignPlants(Long companyId, AssignPlantsRequest request) {
+    public CompanyDetailResponse assignPlants(UUID companyId, AssignPlantsRequest request) {
         Company company = findCompany(companyId);
         List<Long> plantIds = request.getPlantIds() == null ? List.of() : request.getPlantIds();
         List<Plant> currentlyAssigned = plantRepository.findByCompany(company);
@@ -305,8 +311,11 @@ public class ControlCenterService {
     }
 
     @Transactional
-    public void deleteCompany(Long companyId) {
+    public void deleteCompany(UUID companyId) {
         Company company = findCompany(companyId);
+        if (deviceRepository.existsByTenantId(companyId) || sensorMessageRepository.existsByTenantId(companyId)) {
+            throw new BadRequestException("Cannot delete a tenant that has telemetry history");
+        }
         for (Plant plant : plantRepository.findByCompany(company)) {
             plant.setCompany(null);
             plantRepository.save(plant);
@@ -371,7 +380,7 @@ public class ControlCenterService {
         }
     }
 
-    private Company findCompany(Long id) {
+    private Company findCompany(UUID id) {
         return companyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found: " + id));
     }

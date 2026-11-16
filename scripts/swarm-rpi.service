@@ -1,3 +1,4 @@
+# PURPOSE: Operational script for SWARM deployment or maintenance.
 [Unit]
 Description=SWARM primary stack (MySQL + backend + frontend)
 After=docker.service network-online.target

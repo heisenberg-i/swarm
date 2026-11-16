@@ -1,3 +1,4 @@
+// PURPOSE: Reusable React component for the SWARM UI.
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -8,7 +9,7 @@ import {
 import {
   Menu as MenuIcon, Dashboard, Factory, Sensors, ShowChart,
   Notifications as NotifIcon,   Psychology, Build, Assessment,
-  People, Settings, Logout, Password, BluetoothConnected, MenuBook,
+  People, Settings, Logout, Password, MenuBook,
   PrecisionManufacturing, SmartToy, VpnKey,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
@@ -23,8 +24,7 @@ const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
   { text: 'Plant HMI', icon: <PrecisionManufacturing />, path: '/plant-hmi', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'], requireHmi: true },
   { text: 'Plants', icon: <Factory />, path: '/plants', roles: ['SUPER_ADMIN', 'PLANT_ADMIN'] },
-  { text: 'Sensor Nodes', icon: <Sensors />, path: '/sensors', roles: ['SUPER_ADMIN', 'PLANT_ADMIN'] },
-  { text: 'Connect Device', icon: <BluetoothConnected />, path: '/connect-device', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
+  { text: 'Field Devices', icon: <Sensors />, path: '/sensors', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
   { text: 'Analytics', icon: <ShowChart />, path: '/analytics', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
   { text: 'Alerts', icon: <NotifIcon />, path: '/alerts', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },
   { text: 'NOVA OP', icon: <SmartToy />, path: '/nova-space-op', roles: ['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR'] },

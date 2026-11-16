@@ -1,3 +1,4 @@
+// PURPOSE: HTTP API controller for SWARM reportsettings endpoints.
 package com.biopower.controller;
 
 import com.biopower.dto.request.ReportRequest;
@@ -27,8 +28,9 @@ public class ReportSettingsController {
 
     @GetMapping("/reports")
     public ResponseEntity<ApiResponse<List<Report>>> getReports(
-            @RequestParam(required = false) Long plantId) {
-        return ResponseEntity.ok(ApiResponse.success(reportService.getReports(plantId)));
+            @RequestParam(required = false) Long plantId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(reportService.getReports(plantId, principal)));
     }
 
     @PostMapping("/reports/generate")
@@ -36,7 +38,7 @@ public class ReportSettingsController {
             @Valid @RequestBody ReportRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Report generated", reportService.generateReport(request, principal.getId())));
+                .body(ApiResponse.success("Report generated", reportService.generateReport(request, principal)));
     }
 
     @GetMapping("/settings")

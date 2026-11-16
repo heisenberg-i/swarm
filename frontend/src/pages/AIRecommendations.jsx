@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: AIRecommendations.
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, Chip, FormControl, InputLabel,
@@ -36,8 +37,9 @@ export default function AIRecommendations({ fixedPlantId, embedded = false, hide
   }, [selectedPlant]);
 
   const latest = recommendations[0];
-  const healthScore = latest?.healthScore || 85;
-  const healthStatus = latest?.healthStatus || 'GOOD';
+  const hasHealthScore = latest?.healthScore != null;
+  const healthScore = hasHealthScore ? latest.healthScore : 0;
+  const healthStatus = latest?.healthStatus || null;
 
   return (
     <Box>
@@ -55,14 +57,17 @@ export default function AIRecommendations({ fixedPlantId, embedded = false, hide
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: getHealthColor(healthStatus), color: 'white' }}>
+          <Card sx={{ bgcolor: hasHealthScore ? getHealthColor(healthStatus) : 'grey.600', color: 'white' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <Psychology /><Typography variant="h6">AI Health Score</Typography>
               </Box>
-              <Typography variant="h2" fontWeight={700}>{healthScore}</Typography>
-              <Chip label={healthStatus} sx={{ mt: 1, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
-              <LinearProgress variant="determinate" value={healthScore}
+              <Typography variant="h2" fontWeight={700}>{hasHealthScore ? healthScore : '—'}</Typography>
+              <Chip
+                label={hasHealthScore ? healthStatus : 'No score yet'}
+                sx={{ mt: 1, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+              />
+              <LinearProgress variant="determinate" value={hasHealthScore ? healthScore : 0}
                 sx={{ mt: 2, bgcolor: 'rgba(255,255,255,0.3)', '& .MuiLinearProgress-bar': { bgcolor: 'white' } }} />
             </CardContent>
           </Card>

@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Railway standby optimization (1.3 GB idle → target &lt;800 MB)
 
 **Problem:** Railway project idles at ~**1.31 GB RAM** (MySQL + backend + frontend) while Pi serves all traffic.

@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (PartnerReadingResponse).
 package com.biopower.dto.partner;
 
 import lombok.Builder;

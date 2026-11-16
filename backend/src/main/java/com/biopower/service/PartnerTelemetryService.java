@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM partnertelemetry business rules.
 package com.biopower.service;
 
 import com.biopower.dto.partner.*;
@@ -174,10 +175,10 @@ public class PartnerTelemetryService {
         List<SensorNode> nodes = sensorNodeRepository.findByPlantPlantId(plantId);
         long activeNodes = nodes.stream().filter(n -> n.getStatus() == NodeStatus.ACTIVE).count();
         long activeAlerts = alertRepository.countByPlantIdAndStatus(plantId, AlertStatus.ACTIVE);
-        int healthScore = aiRecommendationRepository.findFirstByPlantIdOrderByCreatedAtDesc(plantId)
+        Integer healthScore = aiRecommendationRepository.findFirstByPlantIdOrderByCreatedAtDesc(plantId)
                 .map(AiRecommendation::getHealthScore)
-                .orElse(85);
-        HealthStatus healthStatus = resolveHealthStatus(healthScore);
+                .orElse(null);
+        String healthStatus = healthScore != null ? resolveHealthStatus(healthScore).name() : null;
         List<String> recommendations = aiRecommendationRepository.findByPlantIdOrderByCreatedAtDesc(plantId).stream()
                 .limit(3)
                 .map(AiRecommendation::getRecommendation)
@@ -187,7 +188,7 @@ public class PartnerTelemetryService {
                 .plantId(String.valueOf(plantId))
                 .plantName(plant.getPlantName())
                 .healthScore(healthScore)
-                .healthStatus(healthStatus.name())
+                .healthStatus(healthStatus)
                 .activeAlerts(activeAlerts)
                 .activeDevices(activeNodes)
                 .totalDevices((long) nodes.size())
@@ -285,8 +286,8 @@ public class PartnerTelemetryService {
     }
 
     private List<Plant> resolveAccessiblePlants(PartnerPrincipal principal) {
-        if (principal.getAllowedPlantIds() == null || principal.getAllowedPlantIds().isEmpty()) {
-            return plantRepository.findAll();
+        if (!principal.hasPlantAllowList()) {
+            return List.of();
         }
         return plantRepository.findByPlantIdIn(new ArrayList<>(principal.getAllowedPlantIds()));
     }

@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM sensornode business rules.
 package com.biopower.service;
 
 import com.biopower.dto.request.SensorNodeRequest;
@@ -46,8 +47,10 @@ public class SensorNodeService {
     }
 
     @Transactional(readOnly = true)
-    public SensorNodeResponse getNodeById(Long id) {
-        return toResponse(findNode(id));
+    public SensorNodeResponse getNodeById(Long id, UserPrincipal principal) {
+        SensorNode node = findNode(id);
+        plantAccessService.assertCanAccessPlant(principal, node.getPlant().getPlantId());
+        return toResponse(node);
     }
 
     @Transactional
@@ -60,7 +63,8 @@ public class SensorNodeService {
                 .plant(plant)
                 .nodeName(request.getNodeName())
                 .sensorType(request.getSensorType())
-                .firmwareVersion(request.getFirmwareVersion())
+                // Only persist firmware/battery/signal when genuinely supplied — never invent defaults.
+                .firmwareVersion(blankToNull(request.getFirmwareVersion()))
                 .batteryLevel(request.getBatteryLevel())
                 .signalStrength(request.getSignalStrength())
                 .status(request.getStatus() != null ? request.getStatus() : NodeStatus.ACTIVE)
@@ -80,9 +84,15 @@ public class SensorNodeService {
         }
         node.setNodeName(request.getNodeName());
         node.setSensorType(request.getSensorType());
-        node.setFirmwareVersion(request.getFirmwareVersion());
-        node.setBatteryLevel(request.getBatteryLevel());
-        node.setSignalStrength(request.getSignalStrength());
+        if (request.getFirmwareVersion() != null) {
+            node.setFirmwareVersion(blankToNull(request.getFirmwareVersion()));
+        }
+        if (request.getBatteryLevel() != null) {
+            node.setBatteryLevel(request.getBatteryLevel());
+        }
+        if (request.getSignalStrength() != null) {
+            node.setSignalStrength(request.getSignalStrength());
+        }
         if (request.getStatus() != null) node.setStatus(request.getStatus());
         return toResponse(sensorNodeRepository.save(node));
     }
@@ -151,5 +161,9 @@ public class SensorNodeService {
         if (!enabled.isEmpty() && !enabled.contains(sensorType)) {
             throw new BadRequestException("Sensor type is not enabled for this project: " + sensorType);
         }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

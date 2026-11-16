@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Swarm reply — emPOWER ↔ Swarm workflow alignment
 
 **Audience:** emPOWER Manufacturing Hub / integrations + Swarm Cursor team  

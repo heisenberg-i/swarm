@@ -1,3 +1,4 @@
+// PURPOSE: Shared backend helper used by SWARM services.
 package com.biopower.util;
 
 import com.biopower.model.enums.SensorType;

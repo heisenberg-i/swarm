@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # BIOPOWER API Documentation
 
 Base URL: `http://localhost:8080/api`
@@ -10,7 +11,7 @@ All authenticated endpoints require header: `Authorization: Bearer <token>`
 
 ### POST /auth/login
 ```json
-{ "email": "swarm.nfi@gmail.com", "password": "Swarm@2026" }
+{ "email": "your-admin@example.com", "password": "<your-password>" }
 ```
 Response: `{ "success": true, "data": { "token": "...", "role": "SUPER_ADMIN", ... } }`
 

@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Raspberry Pi Deployment Guide
 
 Deploy BIOPOWER on Raspberry Pi 4/5 for edge-based plant monitoring.
@@ -173,6 +174,6 @@ vcgencmd measure_temp
 ## Backup Strategy
 
 ```bash
-# Daily database backup cron
-0 2 * * * docker exec biopower-mysql mysqldump -u biopower -pbiopower123 biopower_db > /home/pi/backups/db_$(date +\%Y\%m\%d).sql
+# Daily database backup (Compose TimescaleDB). Password is taken from the container env.
+0 2 * * * docker exec swarm-postgres pg_dump -U "$DB_USER" -d "$DB_NAME" -Fc > /home/pi/backups/swarm_$(date +\%Y\%m\%d).dump
 ```

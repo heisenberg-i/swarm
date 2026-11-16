@@ -1,3 +1,4 @@
+# PURPOSE: Root Railway/frontend image when the service build context is the repo root.
 # Frontend deploy from repo root (Railway "swarm_webapp" service without subdirectory)
 FROM node:20-alpine AS build
 WORKDIR /app

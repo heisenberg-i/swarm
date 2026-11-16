@@ -1,3 +1,4 @@
+// PURPOSE: HTTP API controller for SWARM controlcenter endpoints.
 package com.biopower.controller;
 
 import com.biopower.dto.request.ApproveUserRequest;
@@ -22,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/control-center")
@@ -47,38 +49,38 @@ public class ControlCenterController {
     }
 
     @GetMapping("/companies/{id}")
-    public ResponseEntity<ApiResponse<CompanyDetailResponse>> getCompany(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CompanyDetailResponse>> getCompany(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(controlCenterService.getCompany(id)));
     }
 
     @PatchMapping("/companies/{id}/disable")
-    public ResponseEntity<ApiResponse<CompanyResponse>> disableCompany(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CompanyResponse>> disableCompany(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Company disabled", controlCenterService.setCompanyStatus(id, CompanyStatus.DISABLED)));
     }
 
     @PatchMapping("/companies/{id}/enable")
-    public ResponseEntity<ApiResponse<CompanyResponse>> enableCompany(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CompanyResponse>> enableCompany(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Company enabled", controlCenterService.setCompanyStatus(id, CompanyStatus.ACTIVE)));
     }
 
     @DeleteMapping("/companies/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteCompany(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteCompany(@PathVariable UUID id) {
         controlCenterService.deleteCompany(id);
         return ResponseEntity.ok(ApiResponse.success("Company deleted", null));
     }
 
     @PostMapping("/companies/{id}/super-admin")
     public ResponseEntity<ApiResponse<UserResponse>> createSuperAdmin(
-            @PathVariable Long id, @Valid @RequestBody SuperAdminRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody SuperAdminRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Super Admin created", controlCenterService.createSuperAdmin(id, request)));
     }
 
     @PutMapping("/companies/{id}/plants")
     public ResponseEntity<ApiResponse<CompanyDetailResponse>> assignPlants(
-            @PathVariable Long id, @Valid @RequestBody AssignPlantsRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody AssignPlantsRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Plants assigned", controlCenterService.assignPlants(id, request)));
     }

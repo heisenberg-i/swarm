@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM auth business rules.
 package com.biopower.service;
 
 import com.biopower.config.EmpowerSaaSAuthProperties;

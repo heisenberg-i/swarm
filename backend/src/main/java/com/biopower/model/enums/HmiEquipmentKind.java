@@ -1,3 +1,4 @@
+// PURPOSE: Enumerated value used by SWARM HmiEquipmentKind domain logic.
 package com.biopower.model.enums;
 
 public enum HmiEquipmentKind {

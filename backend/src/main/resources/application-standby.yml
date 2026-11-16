@@ -1,3 +1,4 @@
+# PURPOSE: Standby/failover Spring profile for a secondary API instance.
 # Railway warm standby — minimal footprint when Pi is primary.
 # Activate with: SPRING_PROFILES_ACTIVE=prod,standby  and  SWARM_DEPLOYMENT_ROLE=standby
 

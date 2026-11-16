@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Control Center
 
 Control Center is **Swarm multi-tenant onboarding** for nanoFarm sales/ops. It is not the plant dashboard.

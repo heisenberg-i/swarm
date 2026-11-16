@@ -1,3 +1,4 @@
+// PURPOSE: Spring Boot configuration/startup component for SWARM.
 package com.biopower.config;
 
 import com.biopower.model.entity.Plant;
@@ -103,13 +104,8 @@ public class TataSteelSensorSync implements CommandLineRunner {
     }
 
     private void seedReading(Long plantId, SensorNode node, double baseline) {
-        sensorReadingRepository.save(SensorReading.builder()
-                .plantId(plantId)
-                .nodeId(node.getNodeId())
-                .sensorType(node.getSensorType())
-                .value(baseline)
-                .recordedAt(LocalDateTime.now())
-                .build());
+        log.debug("Skip synthetic seed reading for plant {} node {} (Timescale telemetry is source of truth)",
+                plantId, node.getNodeId());
     }
 
     private record SensorDef(String tagPrefix, String name, SensorType type, String rio, double baseline) {}

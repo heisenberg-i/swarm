@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # emPOWER Integration Handoff Package
 
 **From:** SWARM team  

@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 """Generate Nova Space OP LLM API Keys setup guide PDF."""
 from datetime import date
 from fpdf import FPDF

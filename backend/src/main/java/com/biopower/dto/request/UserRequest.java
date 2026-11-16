@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (UserRequest).
 package com.biopower.dto.request;
 
 import com.biopower.model.enums.UserRole;

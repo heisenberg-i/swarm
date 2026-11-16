@@ -1,7 +1,10 @@
+// PURPOSE: Spring Boot configuration/startup component for SWARM.
 package com.biopower.config;
 
 import com.biopower.security.ApiKeyAuthenticationFilter;
 import com.biopower.security.CustomAccessDeniedHandler;
+import com.biopower.security.DeviceAuthenticationFilter;
+import com.biopower.security.IngestRateLimitFilter;
 import com.biopower.security.JwtAuthenticationEntryPoint;
 import com.biopower.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +43,8 @@ public class SecurityConfig {
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final JwtAuthenticationFilter jwtFilter;
     private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
+    private final DeviceAuthenticationFilter deviceAuthenticationFilter;
+    private final IngestRateLimitFilter ingestRateLimitFilter;
     private final UserDetailsService userDetailsService;
 
     @Value("${biopower.cors.allowed-origins}")
@@ -76,11 +81,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/health").permitAll()
+                        .requestMatchers("/auth/me", "/auth/change-password").authenticated()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/iot/data").permitAll()
                         .requestMatchers(HttpMethod.POST, "/iot/batch").permitAll()
                         .requestMatchers("/control-center/**").hasRole("CONTROL_CENTER_ADMIN")
                         .requestMatchers("/partner/v1/**").authenticated()
+                        .requestMatchers("/admin/partner/**").hasRole("SUPER_ADMIN")
                         .requestMatchers("/admin/**").hasAnyRole("SUPER_ADMIN", "CONTROL_CENTER_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/plants/**").hasAnyRole("SUPER_ADMIN", "PLANT_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/plants/**").hasAnyRole("SUPER_ADMIN", "PLANT_ADMIN")
@@ -89,6 +96,8 @@ public class SecurityConfig {
                         .requestMatchers("/settings/**").hasRole("SUPER_ADMIN")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(ingestRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(deviceAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(apiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -1,8 +1,10 @@
+// PURPOSE: Application service implementing SWARM plant business rules.
 package com.biopower.service;
 
 import com.biopower.dto.request.PlantRequest;
 import com.biopower.dto.response.PlantResponse;
 import com.biopower.exception.ResourceNotFoundException;
+import com.biopower.model.entity.AiRecommendation;
 import com.biopower.model.entity.Company;
 import com.biopower.model.entity.Plant;
 import com.biopower.model.enums.AlertStatus;
@@ -133,8 +135,8 @@ public class PlantService {
         int activeNodes = (int) sensorNodeRepository.countByPlantPlantIdAndStatus(plant.getPlantId(), NodeStatus.ACTIVE);
         int activeAlerts = (int) alertRepository.countByPlantIdAndStatus(plant.getPlantId(), AlertStatus.ACTIVE);
         Integer healthScore = aiRecommendationRepository.findFirstByPlantIdOrderByCreatedAtDesc(plant.getPlantId())
-                .map(r -> r.getHealthScore()).orElse(85);
-        HealthStatus healthStatus = resolveHealthStatus(healthScore);
+                .map(AiRecommendation::getHealthScore).orElse(null);
+        HealthStatus healthStatus = healthScore != null ? resolveHealthStatus(healthScore) : null;
 
         return PlantResponse.builder()
                 .plantId(plant.getPlantId())

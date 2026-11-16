@@ -1,3 +1,4 @@
+// PURPOSE: SWARM project file: pidRegistry.js
 /** ISA symbol and grouping for P&ID instruments */
 
 const INSTRUMENT_KINDS = new Set([

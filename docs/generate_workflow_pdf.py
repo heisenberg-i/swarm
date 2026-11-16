@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 """Generate SWARM Project Workflow & Usage PDF."""
 from datetime import date
 from fpdf import FPDF

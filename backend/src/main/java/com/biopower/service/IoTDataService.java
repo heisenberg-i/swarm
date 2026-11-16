@@ -1,120 +1,76 @@
+// PURPOSE: Application service implementing SWARM iotdata business rules.
 package com.biopower.service;
 
 import com.biopower.dto.request.IoTBatchRequest;
 import com.biopower.dto.request.IoTDataRequest;
 import com.biopower.dto.response.SensorReadingResponse;
-import com.biopower.exception.BadRequestException;
-import com.biopower.model.entity.SensorNode;
-import com.biopower.model.entity.SensorReading;
-import com.biopower.model.enums.NodeStatus;
-import com.biopower.repository.SensorNodeRepository;
-import com.biopower.repository.SensorReadingRepository;
+import com.biopower.model.enums.IngestTransport;
+import com.biopower.telemetry.IngestEnvelope;
+import com.biopower.telemetry.IngestPoint;
+import com.biopower.telemetry.IngestResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * HTTP / legacy adapter into {@link TelemetryIngestService}.
+ * Keeps firmware batch JSON compatible.
+ */
 @Service
 @RequiredArgsConstructor
 public class IoTDataService {
 
-    private final SensorReadingRepository sensorReadingRepository;
-    private final SensorNodeRepository sensorNodeRepository;
-    private final AlertService alertService;
-    private final AiHealthService aiHealthService;
+    private final TelemetryIngestService telemetryIngestService;
 
     @Transactional
     public SensorReadingResponse ingestData(IoTDataRequest request) {
-        SensorReadingResponse response = persistReading(request);
-        aiHealthService.analyzePlant(request.getPlantId());
-        return response;
-    }
-
-    private SensorReadingResponse persistReading(IoTDataRequest request) {
-        SensorNode node = sensorNodeRepository.findByNodeIdAndPlantPlantId(request.getNodeId(), request.getPlantId())
-                .orElseThrow(() -> new BadRequestException("Invalid plant/node combination"));
-        if (request.getSensorType() != node.getSensorType()) {
-            throw new BadRequestException("Sensor type does not match registered node: expected "
-                    + node.getSensorType());
-        }
-
-        LocalDateTime recordedAt = request.getTimestamp() != null ? request.getTimestamp() : LocalDateTime.now();
-
-        SensorReading reading = SensorReading.builder()
+        IngestEnvelope envelope = IngestEnvelope.builder()
+                .transport(IngestTransport.HTTP)
+                .schemaVersion("legacy-1")
                 .plantId(request.getPlantId())
-                .nodeId(request.getNodeId())
-                .sensorType(node.getSensorType())
-                .value(request.getValue())
-                .recordedAt(recordedAt)
+                .sourceTimestamp(request.getTimestamp())
+                .readings(List.of(IngestPoint.builder()
+                        .nodeId(request.getNodeId())
+                        .sensorType(request.getSensorType())
+                        .value(request.getValue())
+                        .build()))
+                .payloadExcerpt("single nodeId=" + request.getNodeId())
                 .build();
-
-        reading = sensorReadingRepository.save(reading);
-
-        node.setLastReadingAt(recordedAt);
-        if (node.getStatus() == NodeStatus.OFFLINE) {
-            node.setStatus(NodeStatus.ACTIVE);
+        IngestResult result = telemetryIngestService.ingest(envelope);
+        if (result.isDuplicate()) {
+            return result.getReadings().isEmpty() ? null : result.getReadings().get(0);
         }
-        sensorNodeRepository.save(node);
-
-        alertService.evaluateReading(reading);
-
-        return SensorReadingResponse.builder()
-                .id(reading.getId())
-                .plantId(reading.getPlantId())
-                .nodeId(reading.getNodeId())
-                .sensorType(reading.getSensorType())
-                .value(reading.getValue())
-                .recordedAt(reading.getRecordedAt())
-                .build();
+        return result.getReadings().isEmpty() ? null : result.getReadings().get(0);
     }
 
     @Transactional
     public List<SensorReadingResponse> ingestBatch(IoTBatchRequest request) {
-        List<SensorReadingResponse> responses = new ArrayList<>();
-        Set<Long> updatedNodes = new HashSet<>();
+        List<IngestPoint> points = request.getReadings().stream()
+                .map(item -> IngestPoint.builder()
+                        .nodeId(item.getNodeId())
+                        .sensorType(item.getSensorType())
+                        .value(item.getValue())
+                        .build())
+                .collect(Collectors.toList());
 
-        for (IoTBatchRequest.Reading item : request.getReadings()) {
-            IoTDataRequest single = new IoTDataRequest();
-            single.setPlantId(request.getPlantId());
-            single.setNodeId(item.getNodeId());
-            single.setSensorType(item.getSensorType());
-            single.setValue(item.getValue());
-            responses.add(persistReading(single));
-            updatedNodes.add(item.getNodeId());
-        }
+        IngestEnvelope envelope = IngestEnvelope.builder()
+                .transport(IngestTransport.HTTP)
+                .schemaVersion("legacy-batch-1")
+                .plantId(request.getPlantId())
+                .deviceUid(request.getDeviceId())
+                .chipId(request.getChipId())
+                .rssi(request.getRssi())
+                .ip(request.getIp())
+                .messageId(request.getMessageId())
+                .sourceTimestamp(request.getTimestamp())
+                .readings(points)
+                .payloadExcerpt("batch plantId=" + request.getPlantId() + " chipId=" + request.getChipId())
+                .build();
 
-        if (!responses.isEmpty()) {
-            aiHealthService.analyzePlant(request.getPlantId());
-        }
-
-        String deviceIp = request.getIp() != null ? request.getIp().trim() : "";
-        Integer rssi = request.getRssi();
-        if (rssi != null || !deviceIp.isBlank()) {
-            int signalPercent = rssi != null ? rssiToPercent(rssi) : -1;
-            for (Long nodeId : updatedNodes) {
-                sensorNodeRepository.findByNodeIdAndPlantPlantId(nodeId, request.getPlantId())
-                        .ifPresent(node -> {
-                            if (rssi != null) {
-                                node.setSignalStrength(signalPercent);
-                            }
-                            if (!deviceIp.isBlank()) {
-                                node.setDeviceIp(deviceIp);
-                            }
-                            sensorNodeRepository.save(node);
-                        });
-            }
-        }
-
-        return responses;
-    }
-
-    private int rssiToPercent(int rssi) {
-        int percent = (int) ((rssi + 100) * 100.0 / 50.0);
-        return Math.max(0, Math.min(100, percent));
+        IngestResult result = telemetryIngestService.ingest(envelope);
+        return result.getReadings();
     }
 }

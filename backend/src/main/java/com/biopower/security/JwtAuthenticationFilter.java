@@ -1,3 +1,4 @@
+// PURPOSE: Authentication/authorization component for SWARM API security.
 package com.biopower.security;
 
 import jakarta.servlet.FilterChain;

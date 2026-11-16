@@ -1,3 +1,4 @@
+// PURPOSE: HTTP API controller for SWARM dashboard endpoints.
 package com.biopower.controller;
 
 import com.biopower.dto.response.ApiResponse;
@@ -79,8 +80,9 @@ public class DashboardController {
     }
 
     @PatchMapping("/ai/recommendations/{id}/acknowledge")
-    public ResponseEntity<ApiResponse<Void>> acknowledgeRecommendation(@PathVariable Long id) {
-        aiHealthService.acknowledgeRecommendation(id);
+    public ResponseEntity<ApiResponse<Void>> acknowledgeRecommendation(
+            @PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {
+        aiHealthService.acknowledgeRecommendation(id, principal);
         return ResponseEntity.ok(ApiResponse.success("Recommendation acknowledged", null));
     }
 }

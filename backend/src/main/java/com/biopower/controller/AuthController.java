@@ -1,3 +1,4 @@
+// PURPOSE: HTTP API controller for SWARM auth endpoints.
 package com.biopower.controller;
 
 import com.biopower.dto.request.ChangePasswordRequest;

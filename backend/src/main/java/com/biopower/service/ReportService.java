@@ -1,9 +1,12 @@
+// PURPOSE: Application service implementing SWARM report business rules.
 package com.biopower.service;
 
 import com.biopower.dto.request.ReportRequest;
+import com.biopower.exception.BadRequestException;
 import com.biopower.model.entity.Report;
 import com.biopower.model.enums.ReportType;
 import com.biopower.repository.ReportRepository;
+import com.biopower.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,17 +20,23 @@ import java.util.List;
 public class ReportService {
 
     private final ReportRepository reportRepository;
+    private final PlantAccessService plantAccessService;
 
     @Transactional(readOnly = true)
-    public List<Report> getReports(Long plantId) {
-        if (plantId != null) {
-            return reportRepository.findByPlantIdOrderByCreatedAtDesc(plantId);
+    public List<Report> getReports(Long plantId, UserPrincipal principal) {
+        if (plantId == null) {
+            throw new BadRequestException("plantId is required");
         }
-        return reportRepository.findAll();
+        plantAccessService.assertCanAccessPlant(principal, plantId);
+        return reportRepository.findByPlantIdOrderByCreatedAtDesc(plantId);
     }
 
     @Transactional
-    public Report generateReport(ReportRequest request, Long userId) {
+    public Report generateReport(ReportRequest request, UserPrincipal principal) {
+        if (request.getPlantId() == null) {
+            throw new BadRequestException("plantId is required");
+        }
+        plantAccessService.assertCanAccessPlant(principal, request.getPlantId());
         String format = request.getFormat() != null ? request.getFormat() : "PDF";
         String title = buildTitle(request.getReportType(), request.getPlantId());
 
@@ -37,7 +46,7 @@ public class ReportService {
                 .title(title)
                 .filePath("/reports/" + title.replace(" ", "_") + "." + format.toLowerCase())
                 .fileFormat(format)
-                .generatedBy(userId)
+                .generatedBy(principal.getId())
                 .build();
         return reportRepository.save(report);
     }

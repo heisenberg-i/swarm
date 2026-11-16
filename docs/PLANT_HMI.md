@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Plant HMI — P&ID Interactive View
 
 **Status:** Implemented (simulation mode)  
@@ -118,11 +119,9 @@ Seeded automatically for plants whose feedstock references `P&ID`.
 
 ---
 
-## Demo credentials
+## Login
 
-| Role | Email | Password |
-|------|-------|----------|
-| Control Center Admin | swarm.nfi@gmail.com | Swarm@2026 |
+HMI is in the plant app after Control Center enables the plant. There are no demo Control Center passwords in this document.
 
 ---
 

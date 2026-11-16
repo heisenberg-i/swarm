@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# PURPOSE: Operational script for SWARM deployment or maintenance.
 # Install systemd service so SWARM Docker stack starts automatically after Pi reboot/power loss.
 # Run once on the Pi:
 #   cd ~/swarm_webapp

@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM device business rules.
 package com.biopower.service;
 
 import com.biopower.dto.request.DevicePairRequest;
@@ -38,6 +39,7 @@ public class DeviceService {
     private final EspProxyService espProxyService;
     private final IoTDataService iotDataService;
     private final PlantAccessService plantAccessService;
+    private final DeviceRegistryService deviceRegistryService;
 
     @Transactional
     public DevicePairResponse pairDevice(DevicePairRequest request, UserPrincipal principal) {
@@ -84,6 +86,9 @@ public class DeviceService {
         assignPairedResourcesToUser(targetUserId, plant, existing);
         persistDeviceIp(existing, request.getEspIp());
 
+        DeviceRegistryService.DeviceProvisionResult provision =
+                deviceRegistryService.ensureEspHubDevice(plant, chipId, deviceName, existing);
+
         return DevicePairResponse.builder()
                 .chipId(chipId)
                 .deviceName(deviceName)
@@ -92,6 +97,9 @@ public class DeviceService {
                 .humidityNodeId(byType.get(SensorType.HUMIDITY).getNodeId())
                 .gasNodeId(byType.get(SensorType.METHANE).getNodeId())
                 .newlyPaired(newlyPaired)
+                .deviceUid(provision.device().getDeviceUid())
+                .deviceDbId(provision.device().getId())
+                .deviceSecret(provision.plaintextSecretOnce())
                 .build();
     }
 
@@ -255,9 +263,7 @@ public class DeviceService {
                 .nodeName(name)
                 .sensorType(type)
                 .deviceChipId(chipId)
-                .firmwareVersion("swarm-model-v1")
-                .batteryLevel(100)
-                .signalStrength(90)
+                // firmware / battery / signal stay null until the hub reports them
                 .status(NodeStatus.ACTIVE)
                 .build();
         return sensorNodeRepository.save(node);
@@ -270,9 +276,6 @@ public class DeviceService {
                 .map(node -> {
                     node.setDeviceChipId(chipId);
                     node.setNodeName(nodeName);
-                    if (node.getFirmwareVersion() == null || node.getFirmwareVersion().isBlank()) {
-                        node.setFirmwareVersion("swarm-model-v1");
-                    }
                     return sensorNodeRepository.save(node);
                 })
                 .orElse(null);

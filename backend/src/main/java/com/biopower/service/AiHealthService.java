@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM aihealth business rules.
 package com.biopower.service;
 
 import com.biopower.dto.response.AiRecommendationResponse;
@@ -138,11 +139,12 @@ public class AiHealthService {
     }
 
     @Transactional
-    public void acknowledgeRecommendation(Long id) {
-        aiRecommendationRepository.findById(id).ifPresent(r -> {
-            r.setAcknowledged(true);
-            aiRecommendationRepository.save(r);
-        });
+    public void acknowledgeRecommendation(Long id, UserPrincipal principal) {
+        AiRecommendation rec = aiRecommendationRepository.findById(id)
+                .orElseThrow(() -> new com.biopower.exception.ResourceNotFoundException("Recommendation not found"));
+        plantAccessService.assertCanAccessPlant(principal, rec.getPlantId());
+        rec.setAcknowledged(true);
+        aiRecommendationRepository.save(rec);
     }
 
     @Transactional(readOnly = true)
@@ -163,8 +165,8 @@ public class AiHealthService {
         boolean operatorScoped = plantAccessService.shouldFilterSensorsForOperator(principal);
         List<SensorType> visibleSensorTypes = resolveVisibleSensorTypes(plant, plantNodes, operatorScoped);
         Map<SensorType, Double> readings = getCurrentReadings(plantId, allowedNodeIds, visibleSensorTypes);
-        int healthScore = aiRecommendationRepository.findFirstByPlantIdOrderByCreatedAtDesc(plantId)
-                .map(AiRecommendation::getHealthScore).orElse(85);
+        Integer healthScore = aiRecommendationRepository.findFirstByPlantIdOrderByCreatedAtDesc(plantId)
+                .map(AiRecommendation::getHealthScore).orElse(null);
 
         long activeNodes = plantNodes.stream()
                 .filter(n -> sensorHeartbeat.effectiveStatus(n) == NodeStatus.ACTIVE)
@@ -180,7 +182,7 @@ public class AiHealthService {
         return DashboardResponse.builder()
                 .plantId(plantId)
                 .plantName(plant.getPlantName())
-                .healthStatus(resolveHealthStatus(healthScore))
+                .healthStatus(healthScore != null ? resolveHealthStatus(healthScore) : null)
                 .healthScore(healthScore)
                 .currentReadings(readings)
                 .activeAlerts(activeAlerts)

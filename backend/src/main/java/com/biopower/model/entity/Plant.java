@@ -1,3 +1,4 @@
+// PURPOSE: JPA entity mapping for SWARM table/fields used by Plant.
 package com.biopower.model.entity;
 
 import com.biopower.model.enums.PlantStatus;
@@ -48,7 +49,7 @@ public class Plant {
     private PlantStatus status = PlantStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
+    @JoinColumn(name = "tenant_id")
     private Company company;
 
     /** Comma-separated SensorType names enabled for this SaaS project/plant dashboard. */
@@ -57,7 +58,7 @@ public class Plant {
 
     /** Plant HMI in the Swarm app is visible only when Control Center enables this. */
     @Builder.Default
-    @Column(name = "hmi_enabled", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    @Column(name = "hmi_enabled", nullable = false)
     private boolean hmiEnabled = false;
 
     @OneToMany(mappedBy = "plant", cascade = CascadeType.ALL, orphanRemoval = true)

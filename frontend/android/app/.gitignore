@@ -1,2 +1,3 @@
+# PURPOSE: SWARM project file frontend/android/app/.gitignore.
 /build/*
 !/build/.npmkeep

@@ -1,3 +1,4 @@
+// PURPOSE: Enumerated value used by SWARM SensorType domain logic.
 package com.biopower.model.enums;
 
 public enum SensorType {

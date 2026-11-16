@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Raspberry Pi Primary Runbook
 
 **Architecture:** RPi runs the live SWARM stack (app + API + MySQL). Railway is a warm standby. Cloudflare routes traffic based on health checks.

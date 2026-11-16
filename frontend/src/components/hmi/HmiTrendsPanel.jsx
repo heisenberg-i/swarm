@@ -1,3 +1,4 @@
+// PURPOSE: Plant HMI UI component used by the SWARM P&ID screens.
 import { Box, Card, CardContent, Grid, Typography, Button } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ShowChart } from '@mui/icons-material';

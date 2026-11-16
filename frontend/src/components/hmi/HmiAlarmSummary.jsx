@@ -1,3 +1,4 @@
+// PURPOSE: Plant HMI UI component used by the SWARM P&ID screens.
 import { useEffect, useState } from 'react';
 import {
   Box, Button, Chip, CircularProgress, Table, TableBody, TableCell,

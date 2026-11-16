@@ -1,3 +1,4 @@
+// PURPOSE: Email/password (and optional SSO) sign-in screen.
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {

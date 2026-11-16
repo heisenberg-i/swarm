@@ -1,3 +1,4 @@
+// PURPOSE: React router for Control Center and plant-app pages (NOVA routes unchanged).
 import { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -9,7 +10,6 @@ import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Plants from './pages/Plants';
 import Sensors from './pages/Sensors';
-import ConnectDevice from './pages/ConnectDevice';
 import Analytics from './pages/Analytics';
 import Alerts from './pages/Alerts';
 import AIRecommendations from './pages/AIRecommendations';
@@ -119,8 +119,8 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="plant-hmi" element={<PlantHmi />} />
           <Route path="plants" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Plants /></ProtectedRoute>} />
-          <Route path="sensors" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN']}><Sensors /></ProtectedRoute>} />
-          <Route path="connect-device" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR']}><ConnectDevice /></ProtectedRoute>} />
+          <Route path="sensors" element={<ProtectedRoute roles={['SUPER_ADMIN', 'PLANT_ADMIN', 'OPERATOR']}><Sensors /></ProtectedRoute>} />
+          <Route path="connect-device" element={<Navigate to="/sensors?tab=pair" replace />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="ai" element={<AIRecommendations />} />

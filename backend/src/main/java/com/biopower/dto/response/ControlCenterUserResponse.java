@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (ControlCenterUserResponse).
 package com.biopower.dto.response;
 
 import com.biopower.model.enums.UserRole;
@@ -7,6 +8,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -17,7 +19,7 @@ public class ControlCenterUserResponse {
     private String mobile;
     private UserRole role;
     private UserStatus status;
-    private Long companyId;
+    private UUID companyId;
     private String companyName;
     private List<Long> plantIds;
     private String queueReason;

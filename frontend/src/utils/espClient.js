@@ -1,3 +1,4 @@
+// PURPOSE: Frontend helper used by SWARM pages (espClient).
 const ESP_TIMEOUT_MS = 8000;
 
 function espUrl(ip, path) {

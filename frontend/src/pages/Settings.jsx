@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Settings.
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, CardContent, Grid, TextField, Button, Tabs, Tab,

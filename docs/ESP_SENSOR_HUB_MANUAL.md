@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # ESP Sensor Hub Connection Manual
 
 ## SWARM by nanoFarm — Temperature & Methane Hub (SWARM MODEL)

@@ -1,3 +1,4 @@
+// PURPOSE: Enumerated value used by SWARM AiIssueType domain logic.
 package com.biopower.model.enums;
 
 public enum AiIssueType {

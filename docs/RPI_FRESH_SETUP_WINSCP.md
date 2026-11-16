@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Raspberry Pi — Fresh Setup for SWARM (Windows + Cursor Remote SSH)
 
 Use this guide when your Pi **already runs an old project** and you want to **wipe it** and deploy **SWARM** as the primary server.

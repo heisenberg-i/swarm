@@ -1,3 +1,4 @@
+// PURPOSE: SWARM project file: swarm-hmi.js
 /**
  * Swarm Control — IIoT HMI Runtime
  * ISA-101 inspired visualization layer (no PLC logic)

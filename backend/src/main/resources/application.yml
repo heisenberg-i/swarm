@@ -1,19 +1,28 @@
+# PURPOSE: Default Spring configuration for PostgreSQL, JWT, MQTT, and CORS.
 spring:
   application:
     name: biopower-monitoring
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
+    locations: classpath:db/migration
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:biopower_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_USER:biopower}
-    password: ${DB_PASSWORD:biopower123}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:postgresql://${DB_HOST:192.168.29.229}:${DB_PORT:5433}/${DB_NAME:swarm}
+    username: ${DB_USER:swarm_pi}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+        jdbc:
+          time_zone: UTC
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -25,14 +34,17 @@ spring:
           auth: true
           starttls:
             enable: true
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
 
 server:
   port: ${PORT:${SERVER_PORT:8080}}
+  shutdown: graceful
   servlet:
     context-path: /api
 
 jwt:
-  secret: ${JWT_SECRET:biopower-super-secret-key-change-in-production-min-256-bits-long!!}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
 
 mqtt:
@@ -40,10 +52,20 @@ mqtt:
   broker-url: ${MQTT_BROKER:tcp://localhost:1883}
   client-id: biopower-server
   topic: biopower/sensors/#
+  swarm-topic: ${MQTT_SWARM_TOPIC:swarm/v1/+/+/+/telemetry}
   username: ${MQTT_USER:}
   password: ${MQTT_PASSWORD:}
 
 biopower:
+  bootstrap:
+    admin-email: ${SWARM_BOOTSTRAP_ADMIN_EMAIL:}
+    admin-password: ${SWARM_BOOTSTRAP_ADMIN_PASSWORD:}
+  iot:
+    compat-legacy: ${SWARM_IOT_COMPAT_LEGACY:true}
+    max-payload-readings: ${SWARM_IOT_MAX_READINGS:64}
+  rate-limit:
+    ingest-per-minute: ${SWARM_RATE_INGEST_PER_MIN:120}
+    login-per-minute: ${SWARM_RATE_LOGIN_PER_MIN:20}
   identity:
     mode: ${IDENTITY_MODE:local}
     saas:
@@ -69,11 +91,10 @@ biopower:
     ai-recommendations-per-plant: ${AI_RECOMMENDATION_MAX_PER_PLANT:100}
     nova-messages-days: ${NOVA_MESSAGE_RETENTION_DAYS:90}
   swarm:
-    # ESP hub batch ingest base URL (must end with /api). Set on Railway for production pairing.
     public-api-url: ${SWARM_PUBLIC_API_URL:}
     partner:
       sandbox:
-        enabled: ${SWARM_PARTNER_SANDBOX_ENABLED:true}
+        enabled: ${SWARM_PARTNER_SANDBOX_ENABLED:false}
   nova-space-op:
     enabled: ${NOVA_SPACE_OP_ENABLED:true}
     llm:
@@ -85,10 +106,6 @@ biopower:
       confidence-threshold: 0.65
     narrate:
       enabled: ${NOVA_NARRATE_ENABLED:true}
-
-# Nova LLM keys — set via environment (see backend/.env.example). Never commit real keys.
-# GROQ_API_KEY, GROQ_API_KEY_2..4, OPENROUTER_API_KEY..4, GEMINI_API_KEY, GEMINI_API_KEY_2
-# NOVA_GROQ_MODEL, NOVA_OPENROUTER_MODEL, NOVA_GEMINI_MODEL
 
 logging:
   level:

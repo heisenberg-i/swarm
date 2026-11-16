@@ -1,3 +1,4 @@
+// PURPOSE: Plant HMI UI component used by the SWARM P&ID screens.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, IconButton, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { Fullscreen, FullscreenExit } from '@mui/icons-material';

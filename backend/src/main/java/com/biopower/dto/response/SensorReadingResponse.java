@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (SensorReadingResponse).
 package com.biopower.dto.response;
 
 import com.biopower.model.enums.SensorType;

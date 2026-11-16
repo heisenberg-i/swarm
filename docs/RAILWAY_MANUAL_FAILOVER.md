@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Railway Manual Failover (Pi down)
 
 Use when the Raspberry Pi is unhealthy and you need Railway to serve `api.swarm.co.in`.

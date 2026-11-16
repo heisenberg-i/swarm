@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- PURPOSE: SWARM project file: network_security_config.xml -->
 <!--
   Cleartext HTTP for ESP32 / IoT Connect Device pairing on private LAN.
   Android domain-config cannot express CIDR ranges, so cleartext is permitted

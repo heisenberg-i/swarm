@@ -1,3 +1,4 @@
+// PURPOSE: Control Center page for tenant onboarding and plant assignment.
 import { useEffect, useMemo, useState } from 'react';
 import {
   Box, Typography, Card, CardContent, Table, TableBody, TableCell,

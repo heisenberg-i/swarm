@@ -1,3 +1,4 @@
+// PURPOSE: Reusable React component for the SWARM UI.
 import { Box } from '@mui/material';
 
 export default function Logo({ height = 40, sx = {}, ...props }) {

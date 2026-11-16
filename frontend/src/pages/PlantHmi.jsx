@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: PlantHmi.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -183,6 +184,11 @@ export default function PlantHmi({ fixedPlantId, hidePlantSelector = false, embe
           </Tooltip>
         </Box>
       </Box>
+
+      <Alert severity="warning" sx={{ mb: 2 }}>
+        SIMULATION — cloud HMI commands update demo state only. They do not actuate plant equipment,
+        bypass PLC interlocks, or replace hardwired safety.
+      </Alert>
 
       {loadError && (
         <Card sx={{ mb: 2 }}><CardContent><Typography color="error" fontWeight={600}>{loadError}</Typography></CardContent></Card>

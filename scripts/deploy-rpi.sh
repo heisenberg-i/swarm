@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# PURPOSE: Pulls git and rebuilds the SWARM Docker stack on a device.
 # Pull latest swarm_webapp from GitHub and rebuild the Pi Docker stack.
 # Usage:
 #   ./scripts/deploy-rpi.sh              # pull + rebuild if changed
@@ -15,8 +16,8 @@ cd "$REPO_DIR"
 
 REMOTE="${SWARM_GIT_REMOTE:-swarm}"
 BRANCH="${SWARM_GIT_BRANCH:-main}"
-COMPOSE_FILE="${SWARM_COMPOSE_FILE:-docker-compose.rpi.yml}"
-ENV_FILE="${SWARM_ENV_FILE:-.env.rpi}"
+COMPOSE_FILE="${SWARM_COMPOSE_FILE:-docker-compose.yml}"
+ENV_FILE="${SWARM_ENV_FILE:-.env}"
 FORCE=false
 PULL_ONLY=false
 

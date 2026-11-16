@@ -1,3 +1,4 @@
+// PURPOSE: HTTP API controller for SWARM sensornode endpoints.
 package com.biopower.controller;
 
 import com.biopower.dto.request.SensorNodeRequest;
@@ -35,8 +36,9 @@ public class SensorNodeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SensorNodeResponse>> getNode(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(sensorNodeService.getNodeById(id)));
+    public ResponseEntity<ApiResponse<SensorNodeResponse>> getNode(
+            @PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResponse.success(sensorNodeService.getNodeById(id, principal)));
     }
 
     @PostMapping

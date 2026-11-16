@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM analytics business rules.
 package com.biopower.service;
 
 import com.biopower.dto.response.PredictiveMaintenanceResponse;

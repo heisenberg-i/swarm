@@ -1,3 +1,4 @@
+// PURPOSE: Reusable React component for the SWARM UI.
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {

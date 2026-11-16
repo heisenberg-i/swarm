@@ -1,3 +1,4 @@
+// PURPOSE: SWARM project file: swarmControl.js
 /**
  * SWARM platform & HMI — SWM-TSL-WBK-RSIP-001 Rev.1 / P&ID BPG-10-PR-GD-002 Rev.3
  * HMI pages per reduced-scope plan section 11.

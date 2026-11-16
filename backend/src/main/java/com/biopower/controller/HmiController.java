@@ -1,3 +1,4 @@
+// PURPOSE: HTTP API controller for SWARM hmi endpoints.
 package com.biopower.controller;
 
 import com.biopower.dto.request.HmiCommandRequest;

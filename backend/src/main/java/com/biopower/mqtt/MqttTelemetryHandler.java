@@ -1,0 +1,230 @@
+// PURPOSE: MQTT ingest/health adapter for SWARM device telemetry.
+package com.biopower.mqtt;
+
+import com.biopower.exception.BadRequestException;
+import com.biopower.exception.UnauthorizedException;
+import com.biopower.model.entity.Device;
+import com.biopower.model.enums.IngestTransport;
+import com.biopower.model.enums.SensorType;
+import com.biopower.repository.DeviceRepository;
+import com.biopower.security.DevicePrincipal;
+import com.biopower.service.TelemetryIngestService;
+import com.biopower.telemetry.IngestEnvelope;
+import com.biopower.telemetry.IngestPoint;
+import com.biopower.util.DeviceSecretHasher;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Parses MQTT payloads (SWARM v1 and legacy) into {@link TelemetryIngestService}.
+ * Broker username/password should be the device UID/secret; topic must match the device plant.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class MqttTelemetryHandler {
+
+    /**
+     * swarm/v1/{tenantId}/{plantId}/{deviceUid}/telemetry
+     * tenantId may be company id or "_" when unknown.
+     */
+    public static final Pattern SWARM_V1_TELEMETRY = Pattern.compile(
+            "^swarm/v1/([^/]+)/(\\d+)/([^/]+)/telemetry$");
+
+    private final TelemetryIngestService telemetryIngestService;
+    private final DeviceRepository deviceRepository;
+    private final ObjectMapper objectMapper;
+
+    public void handle(String topic, String payload, String mqttUsername, String mqttPassword) {
+        String excerpt = payload != null && payload.length() > 512 ? payload.substring(0, 512) : payload;
+        try {
+            JsonNode root = objectMapper.readTree(payload);
+            TopicContext topicCtx = parseTopic(topic);
+
+            authenticateMqttDevice(topicCtx, root, mqttUsername, mqttPassword);
+
+            if (root.has("readings") && root.get("readings").isArray()) {
+                ingestV1(topicCtx, root, excerpt, topic);
+            } else {
+                ingestLegacy(topicCtx, root, excerpt, topic);
+            }
+        } catch (UnauthorizedException | BadRequestException ex) {
+            log.warn("MQTT ingest rejected topic={}: {}", topic, ex.getMessage());
+            throw ex;
+        } catch (Exception ex) {
+            log.warn("MQTT message processing failed topic={}: {}", topic, ex.getMessage());
+            throw new BadRequestException("Invalid MQTT telemetry payload");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    /** Test / simulation entry without broker credentials (caller must set SecurityContext). */
+    public void handleAuthenticated(String topic, String payload) {
+        handle(topic, payload, null, null);
+    }
+
+    private void authenticateMqttDevice(TopicContext topicCtx, JsonNode root,
+                                        String mqttUsername, String mqttPassword) {
+        DevicePrincipal existing = null;
+        if (SecurityContextHolder.getContext().getAuthentication() instanceof DevicePrincipal dp) {
+            existing = dp;
+        }
+        if (existing != null) {
+            validateTopicMatchesDevice(topicCtx, existing.getPlantId(), existing.getDeviceUid());
+            return;
+        }
+
+        String deviceUid = topicCtx != null ? topicCtx.deviceUid() : text(root, "deviceId");
+        if (deviceUid == null || deviceUid.isBlank()) {
+            deviceUid = text(root, "deviceId");
+        }
+        if (mqttUsername != null && !mqttUsername.isBlank()) {
+            deviceUid = mqttUsername.trim();
+        }
+        if (deviceUid == null || deviceUid.isBlank()) {
+            // Legacy biopower/sensors/# single-point messages without device UID:
+            // leave SecurityContext empty; TelemetryIngestService applies compat-legacy rules.
+            if (topicCtx == null && root.has("plantId") && root.has("nodeId")) {
+                return;
+            }
+            throw new UnauthorizedException("MQTT device identity required");
+        }
+
+        Device device = deviceRepository.findFirstByDeviceUid(deviceUid)
+                .orElseThrow(() -> new UnauthorizedException("Unknown MQTT device"));
+
+        if (mqttPassword != null && !mqttPassword.isBlank()) {
+            // Direct device MQTT session (tests / device-as-client into handler).
+            if (!DeviceSecretHasher.matches(mqttPassword, device.getSecretHash())) {
+                throw new UnauthorizedException("Invalid MQTT device credentials");
+            }
+        }
+        // Server broker subscription: broker ACL already authenticated the publisher.
+        // Identity is taken from the topic/payload device UID and verified against registry.
+
+        validateTopicMatchesDevice(topicCtx, device.getPlantId(), device.getDeviceUid());
+
+        SecurityContextHolder.getContext().setAuthentication(new DevicePrincipal(
+                device.getId(),
+                device.getDeviceUid(),
+                device.getPlantId(),
+                device.getTenantId(),
+                device.getChipId(),
+                device.getDeviceKind(),
+                device.isLegacyCompat(),
+                device.getConfigVersion()
+        ));
+    }
+
+    private void validateTopicMatchesDevice(TopicContext topicCtx, Long plantId, String deviceUid) {
+        if (topicCtx == null) {
+            return;
+        }
+        if (!topicCtx.plantId().equals(plantId)) {
+            throw new UnauthorizedException("MQTT topic plant does not match device plant");
+        }
+        if (!topicCtx.deviceUid().equalsIgnoreCase(deviceUid)) {
+            throw new UnauthorizedException("MQTT topic device does not match authenticated device");
+        }
+    }
+
+    private void ingestV1(TopicContext topicCtx, JsonNode root, String excerpt, String topic) {
+        List<IngestPoint> points = new ArrayList<>();
+        for (JsonNode reading : root.get("readings")) {
+            points.add(IngestPoint.builder()
+                    .channelId(reading.has("channelId") ? reading.get("channelId").asText() : null)
+                    .nodeId(reading.has("nodeId") ? reading.get("nodeId").asLong() : null)
+                    .sensorType(reading.has("sensorType")
+                            ? SensorType.valueOf(reading.get("sensorType").asText().toUpperCase())
+                            : null)
+                    .value(reading.get("value").asDouble())
+                    .build());
+        }
+
+        Long plantId = topicCtx != null ? topicCtx.plantId()
+                : (root.has("plantId") ? root.get("plantId").asLong() : null);
+        String deviceUid = topicCtx != null ? topicCtx.deviceUid() : text(root, "deviceId");
+
+        IngestEnvelope envelope = IngestEnvelope.builder()
+                .transport(IngestTransport.MQTT)
+                .schemaVersion(text(root, "schemaVersion") != null ? text(root, "schemaVersion") : "1.0")
+                .messageId(text(root, "messageId"))
+                .plantId(plantId)
+                .deviceUid(deviceUid)
+                .chipId(text(root, "chipId"))
+                .sourceTimestamp(parseTimestamp(root.get("timestamp")))
+                .readings(points)
+                .topic(topic)
+                .payloadExcerpt(excerpt)
+                .build();
+        telemetryIngestService.ingest(envelope);
+    }
+
+    private void ingestLegacy(TopicContext topicCtx, JsonNode root, String excerpt, String topic) {
+        IngestPoint point = IngestPoint.builder()
+                .nodeId(root.has("nodeId") ? root.get("nodeId").asLong() : null)
+                .sensorType(SensorType.valueOf(root.get("sensorType").asText().toUpperCase()))
+                .value(root.get("value").asDouble())
+                .build();
+        Long plantId = topicCtx != null ? topicCtx.plantId() : root.get("plantId").asLong();
+        IngestEnvelope envelope = IngestEnvelope.builder()
+                .transport(IngestTransport.MQTT)
+                .schemaVersion("legacy-mqtt")
+                .plantId(plantId)
+                .deviceUid(topicCtx != null ? topicCtx.deviceUid() : text(root, "deviceId"))
+                .sourceTimestamp(root.has("timestamp") ? parseTimestamp(root.get("timestamp")) : null)
+                .readings(List.of(point))
+                .topic(topic)
+                .payloadExcerpt(excerpt)
+                .build();
+        telemetryIngestService.ingest(envelope);
+    }
+
+    private TopicContext parseTopic(String topic) {
+        if (topic == null || topic.isBlank()) {
+            return null;
+        }
+        Matcher m = SWARM_V1_TELEMETRY.matcher(topic);
+        if (!m.matches()) {
+            return null;
+        }
+        return new TopicContext(m.group(1), Long.parseLong(m.group(2)), m.group(3));
+    }
+
+    private LocalDateTime parseTimestamp(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        String text = node.asText();
+        try {
+            if (text.endsWith("Z") || text.contains("+")) {
+                return LocalDateTime.ofInstant(Instant.parse(text), ZoneOffset.UTC);
+            }
+            return LocalDateTime.parse(text);
+        } catch (DateTimeParseException ex) {
+            throw new BadRequestException("Invalid timestamp");
+        }
+    }
+
+    private String text(JsonNode root, String field) {
+        return root.has(field) && !root.get(field).isNull() ? root.get(field).asText() : null;
+    }
+
+    public record TopicContext(String tenantId, Long plantId, String deviceUid) {
+    }
+}

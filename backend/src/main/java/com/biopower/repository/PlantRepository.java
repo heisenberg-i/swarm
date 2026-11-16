@@ -1,3 +1,4 @@
+// PURPOSE: Spring Data access for SWARM Plant persistence.
 package com.biopower.repository;
 
 import com.biopower.model.entity.Company;

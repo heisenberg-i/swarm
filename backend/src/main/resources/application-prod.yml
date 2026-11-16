@@ -1,8 +1,13 @@
+# PURPOSE: Production Spring profile used by Docker Compose.
 spring:
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
   jpa:
     hibernate:
-      # Standby (Railway) needs update after hourly Pi sync; override via env if needed.
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
   datasource:
     hikari:
       maximum-pool-size: 5

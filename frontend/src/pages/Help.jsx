@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Help.
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -66,7 +67,7 @@ export default function Help() {
     if (isPlantAdmin) {
       return ['Plant HMI controls', 'Unique ID handoff', 'Wi-Fi setup', 'Pair & assign operators', 'Dashboard check'];
     }
-    return ['Plant HMI (view)', 'Join setup hotspot', 'Change site Wi-Fi', 'Connect Device', 'Dashboard readings'];
+    return ['Plant HMI (view)', 'Join setup hotspot', 'Change site Wi-Fi', 'Field Devices → Pair Sensor Hub', 'Dashboard readings'];
   }, [isSuperAdmin, isPlantAdmin]);
 
   return (
@@ -100,9 +101,9 @@ export default function Help() {
         <Button
           variant="outlined"
           startIcon={<BluetoothConnected />}
-          onClick={() => navigate('/connect-device')}
+          onClick={() => navigate('/sensors?tab=pair')}
         >
-          Open Connect Device
+          Pair Sensor Hub
         </Button>
       </Stack>
 
@@ -124,7 +125,7 @@ export default function Help() {
             <ListItemText primary="Open http://192.168.4.1/setup, enter Unique ID + site Wi‑Fi, save & restart." />
           </ListItem>
           <ListItem>
-            <ListItemText primary="In SWARM → Connect Device, enter ESP LAN IP + Device Password, then pair." />
+            <ListItemText primary="In SWARM → Field Devices → Pair Sensor Hub, enter ESP LAN IP + Device Password, then pair." />
           </ListItem>
         </List>
       </Section>
@@ -139,7 +140,7 @@ export default function Help() {
             setup hotspot password and is required on the `/setup` form before Wi‑Fi can change.
           </Typography>
           <Paper variant="outlined" sx={{ p: 2, mb: 2, fontFamily: 'Consolas, monospace', bgcolor: '#0f172a', color: '#e2e8f0', fontSize: 13 }}>
-            {`const char* DEVICE_UNIQUE_ID = "SWARM-ESP-001";  // change per device\nconst char* DEVICE_PASSWORD  = "22 22";          // used in Connect Device`}
+            {`const char* DEVICE_UNIQUE_ID = "SWARM-ESP-001";  // change per device\nconst char* DEVICE_PASSWORD  = "22 22";          // used in Field Devices → Pair Sensor Hub`}
           </Paper>
           <List dense>
             <ListItem><ListItemText primary="Flash over USB once." /></ListItem>
@@ -186,7 +187,7 @@ export default function Help() {
         <Shot
           src={IMG('01-esp-info.png')}
           alt="ESP /info JSON"
-          caption="Use the ip value later in Connect Device."
+          caption="Use the ip value later in Field Devices → Pair Sensor Hub."
         />
       </Section>
 
@@ -197,12 +198,12 @@ export default function Help() {
 
         <Typography fontWeight={600}>Step 1 — Connect to ESP</Typography>
         <List dense>
-          <ListItem><ListItemText primary="Sidebar → Connect Device" /></ListItem>
+          <ListItem><ListItemText primary="Sidebar → Field Devices → Pair Sensor Hub" /></ListItem>
           <ListItem><ListItemText primary="Enter ESP LAN IP and Device Password (from firmware/setup — not the Unique ID)." /></ListItem>
           <ListItem><ListItemText primary="Click Connect." /></ListItem>
         </List>
-        <Shot src={IMG('04-connect-device-step1.png')} alt="Connect Device empty" caption="Connect Device — start here." />
-        <Shot src={IMG('04-connect-device-step1-filled.png')} alt="Connect Device filled" caption="Example: IP filled and ready to connect." />
+        <Shot src={IMG('04-connect-device-step1.png')} alt="Pair Sensor Hub empty" caption="Field Devices → Pair Sensor Hub — start here." />
+        <Shot src={IMG('04-connect-device-step1-filled.png')} alt="Pair Sensor Hub filled" caption="Example: IP filled and ready to connect." />
         <Shot src={IMG('04c-wrong-password-example.png')} alt="Wrong password" caption="If password is wrong, use Device Password from Arduino/setup." />
 
         <Typography fontWeight={600} sx={{ mt: 1 }}>Step 2 — Check sensors & pair</Typography>
@@ -225,9 +226,9 @@ export default function Help() {
           sx={{ mt: 1 }}
           variant="outlined"
           startIcon={<BluetoothConnected />}
-          onClick={() => navigate('/connect-device')}
+          onClick={() => navigate('/sensors?tab=pair')}
         >
-          Go to Connect Device
+          Pair Sensor Hub
         </Button>
       </Section>
 
@@ -320,7 +321,7 @@ export default function Help() {
             </TableRow>
             <TableRow>
               <TableCell>Device password</TableCell>
-              <TableCell>SWARM Connect Device</TableCell>
+              <TableCell>Field Devices → Pair Sensor Hub</TableCell>
               <TableCell>Admin /setup form</TableCell>
             </TableRow>
             <TableRow>
@@ -353,7 +354,7 @@ export default function Help() {
           </ListItem>
           <ListItem>
             <ListItemText
-              primary="Connect Device / api/devices/esp/info returns 400"
+              primary="Pair Sensor Hub / api/devices/esp/info returns 400"
               secondary="Wrong IP, device offline, or not a private LAN IP. Open http://<ip>/info in a browser first."
             />
           </ListItem>

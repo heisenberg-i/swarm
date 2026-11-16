@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM user business rules.
 package com.biopower.service;
 
 import com.biopower.dto.request.UserRequest;

@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Plants.
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Card, Table, TableBody, TableCell, TableContainer,
@@ -35,7 +36,13 @@ export default function Plants() {
   const [error, setError] = useState('');
 
   const loadPlants = () => {
-    plantAPI.getAll().then(({ data }) => setPlants(data.data || [])).finally(() => setLoading(false));
+    plantAPI.getAll()
+      .then(({ data }) => {
+        setPlants(data.data || []);
+        setError('');
+      })
+      .catch(() => setError('Unable to load plants.'))
+      .finally(() => setLoading(false));
   };
 
   const loadPlantSensors = async (plantId) => {
@@ -170,7 +177,13 @@ export default function Plants() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {plants.map((p) => (
+              {plants.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    No plants yet. Control Center assigns sites to your tenant, or Super Admin can add one here.
+                  </TableCell>
+                </TableRow>
+              ) : plants.map((p) => (
                 <TableRow key={p.plantId}>
                   <TableCell>{p.plantName}</TableCell>
                   <TableCell>{formatPlantType(p.plantType)}</TableCell>

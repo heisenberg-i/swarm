@@ -1,3 +1,4 @@
+// PURPOSE: Plant HMI UI component used by the SWARM P&ID screens.
 import { Box, Card, CardContent, Grid, Typography } from '@mui/material';
 import { getMonitorsForPage } from '../../data/swarmControl';
 

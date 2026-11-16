@@ -1,3 +1,4 @@
+// PURPOSE: Control Center page for tenant onboarding and plant assignment.
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -17,7 +18,7 @@ const unwrapList = (res) => {
 export default function CompanyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const companyId = Number(id);
+  const companyId = id;
   const [detail, setDetail] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -44,8 +45,8 @@ export default function CompanyDetail() {
   useEffect(() => { load(); }, [id]);
 
   const assignablePlants = inventory.filter((p) => {
-    const owner = p.companyId == null ? null : Number(p.companyId);
-    return owner == null || owner === companyId;
+    const owner = p.companyId == null ? null : String(p.companyId);
+    return owner == null || owner === String(companyId);
   });
 
   const togglePlant = (plantId) => {

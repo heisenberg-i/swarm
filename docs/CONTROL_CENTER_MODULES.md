@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Control Center modules (scale)
 
 Control Center is how nanoFarm **sells and provisions Swarm**: tenants, plants, who may log in. The Swarm app is what the customer **operates**.

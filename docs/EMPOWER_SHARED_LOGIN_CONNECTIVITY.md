@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # SWARM ↔ emPOWER — Shared Login & Connectivity Details
 
 **Audience:** emPOWER ERP team + SWARM / nanoFarm team  
@@ -21,24 +22,7 @@
 
 ## 1. Connection string — current SWARM app DB (IoT data, not shared login yet)
 
-This is SWARM’s **application database** (`biopower_db`) — plants, sensors, readings, alerts, and today’s local `users` table.
-
-### Local dev (H2, no Docker)
-
-```
-jdbc:h2:file:./data/biopower_db;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE
-User: sa
-Password: (empty)
-Profile: spring.profiles.active=dev
-```
-
-### Docker / MySQL (default `docker-compose.yml`)
-
-```
-jdbc:mysql://<DB_HOST>:3306/biopower_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-User: biopower
-Password: biopower123   (change in production)
-```
+SWARM’s application database is PostgreSQL 16 + TimescaleDB (`swarm`). MySQL and H2 are retired. Credentials come from environment variables — see `.env.example` and [DOCKER.md](./DOCKER.md). Do not use documented example passwords.
 
 ### API base URL (local)
 
@@ -95,8 +79,8 @@ POST /api/auth/login
 Content-Type: application/json
 
 {
-  "email": "swarm.nfi@gmail.com",
-  "password": "Swarm@2026"
+  "email": "your-admin@example.com",
+  "password": "<your-password>"
 }
 ```
 

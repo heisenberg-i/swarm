@@ -1,5 +1,0 @@
-# Local override: Cursor often binds 127.0.0.1:8080; publish API on 8081 instead.
-services:
-  backend:
-    ports:
-      - "8081:8080"

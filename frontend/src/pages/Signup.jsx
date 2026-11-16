@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Signup.
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {

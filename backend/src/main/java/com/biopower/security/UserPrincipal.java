@@ -1,3 +1,4 @@
+// PURPOSE: Authentication/authorization component for SWARM API security.
 package com.biopower.security;
 
 import com.biopower.model.entity.SensorNode;
@@ -11,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Getter
@@ -25,7 +27,7 @@ public class UserPrincipal implements UserDetails {
     private final boolean enabled;
     private final List<Long> plantIds;
     private final List<Long> nodeIds;
-    private final Long companyId;
+    private final UUID companyId;
 
     public static UserPrincipal create(User user) {
         List<GrantedAuthority> authorities = List.of(
@@ -36,7 +38,7 @@ public class UserPrincipal implements UserDetails {
         List<Long> nodeIds = user.getAssignedSensorNodes().stream()
                 .map(SensorNode::getNodeId)
                 .collect(Collectors.toList());
-        Long companyId = user.getCompany() != null ? user.getCompany().getId() : null;
+        UUID companyId = user.getCompany() != null ? user.getCompany().getId() : null;
 
         return new UserPrincipal(
                 user.getId(),

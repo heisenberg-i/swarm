@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: ConnectDevice.
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -9,7 +10,7 @@ import { deviceAPI, plantAPI, userAPI, sensorAPI } from '../services/api';
 import { fetchEspInfo, fetchEspStatus, configureEsp } from '../utils/espClient';
 import { useAuth } from '../context/AuthContext';
 
-const STEPS = ['Connect to ESP', 'Check sensors', 'Pair with SWARM'];
+const STEPS = ['Reach hub on LAN', 'Verify live readings', 'Assign to plant'];
 const DASHBOARD_PLANT_KEY = 'dashboardPlantId';
 
 function isLocalhostUrl(url) {
@@ -34,7 +35,9 @@ async function espConfigure(ip, password, config) {
   return configureEsp(ip, password, config);
 }
 
-export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
+export default function ConnectDevice({
+  fixedPlantId, embedded = false, hidePlantSelector = false, onPaired,
+}) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -209,6 +212,14 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
     navigate('/dashboard');
   };
 
+  const finishPairing = () => {
+    if (typeof onPaired === 'function') {
+      onPaired(pairResult);
+      return;
+    }
+    goToDashboard();
+  };
+
   const healthColor = (h) => (h === 'OK' ? 'success' : h === 'WARNING' ? 'warning' : 'error');
 
   const useHubIp = (ip) => {
@@ -230,14 +241,23 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-        <BluetoothConnected color="primary" />
-        <Typography variant="h5" fontWeight={700}>Connect Sensor Hub</Typography>
-      </Box>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Pair each SWARM MODEL hub to a plant. Your PC/phone must be on the <strong>same Wi‑Fi</strong> as the ESP.
-        Connect Device talks to the hub directly from your browser (not via the cloud server).
-      </Typography>
+      {!embedded && (
+        <>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <BluetoothConnected color="primary" />
+            <Typography variant="h5" fontWeight={700}>Pair Sensor Hub</Typography>
+          </Box>
+          <Typography color="text.secondary" sx={{ mb: 3 }}>
+            Pair each SWARM MODEL hub to a plant. Your PC/phone must be on the <strong>same Wi‑Fi</strong> as the ESP.
+            Pairing talks to the hub from this browser (not via the cloud server).
+          </Typography>
+        </>
+      )}
+      {embedded && (
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
+          Stay on the plant Wi‑Fi. Pairing creates temperature, humidity, and methane points for this plant.
+        </Typography>
+      )}
 
       <Alert severity="info" sx={{ mb: 2 }}>
         <Typography fontWeight={600} sx={{ mb: 1 }}>How to find the ESP IP</Typography>
@@ -461,11 +481,18 @@ export default function ConnectDevice({ fixedPlantId, embedded = false, hidePlan
             {deviceName ? `${deviceName} · ` : ''}Chip {pairResult.chipId} · Temperature node: {pairResult.temperatureNodeId} · Humidity: {pairResult.humidityNodeId} · Gas: {pairResult.gasNodeId}
           </Typography>
           <Typography variant="body2" sx={{ mt: 1 }}>
-            ESP will send data every 10 seconds. Assign sensors in User Management if needed.
+            The hub will send data about every 30 seconds. Assign instruments to operators under Users if needed.
           </Typography>
-          <Button sx={{ mt: 2 }} variant="outlined" onClick={goToDashboard}>
-            Go to Dashboard
-          </Button>
+          <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {typeof onPaired === 'function' && (
+              <Button variant="contained" onClick={finishPairing}>
+                View plant inventory
+              </Button>
+            )}
+            <Button variant={typeof onPaired === 'function' ? 'outlined' : 'contained'} onClick={goToDashboard}>
+              Go to Dashboard
+            </Button>
+          </Box>
         </Alert>
       )}
     </Box>

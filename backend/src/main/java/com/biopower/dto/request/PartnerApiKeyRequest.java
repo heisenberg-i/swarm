@@ -1,3 +1,4 @@
+// PURPOSE: Request/response DTO for SWARM API payloads (PartnerApiKeyRequest).
 package com.biopower.dto.request;
 
 import jakarta.validation.constraints.NotBlank;

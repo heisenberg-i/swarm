@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Maintenance.
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -69,8 +70,8 @@ export default function Maintenance({ fixedPlantId, embedded = false, hidePlantS
                   <TableRow>
                     <TableCell colSpan={6}>
                       <Alert severity="info">
-                        No sensors are paired on this plant yet. Pair a hub on Connect Device — maintenance
-                        follows those live nodes, not generic pumps or blowers.
+                        No sensors are paired on this plant yet. Pair a hub under Field Devices —
+                        maintenance follows those live nodes, not generic pumps or blowers.
                       </Alert>
                     </TableCell>
                   </TableRow>

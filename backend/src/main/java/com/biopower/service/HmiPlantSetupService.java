@@ -1,3 +1,4 @@
+// PURPOSE: Application service implementing SWARM hmiplantsetup business rules.
 package com.biopower.service;
 
 import com.biopower.model.entity.HmiEquipment;

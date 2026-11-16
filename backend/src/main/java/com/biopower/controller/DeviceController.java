@@ -1,3 +1,4 @@
+// PURPOSE: HTTP API controller for SWARM device endpoints.
 package com.biopower.controller;
 
 import com.biopower.dto.request.DevicePairRequest;

@@ -1,3 +1,4 @@
+// PURPOSE: Frontend helper used by SWARM pages (networkError).
 import { Capacitor } from '@capacitor/core';
 
 export function isNativeApp() {
@@ -15,6 +16,5 @@ export function networkErrorMessage(err) {
     return 'Cannot reach the server. Check mobile internet (Wi-Fi or mobile data) and try again. '
       + `API: ${api}`;
   }
-  return 'Cannot reach the server. On another PC, open the app at the host computer\'s LAN address '
-    + '(e.g. http://192.168.29.22:3000), not localhost. Ensure both frontend and backend are running on the host.';
+  return 'Cannot reach the server. Check that you are using this site\'s address and that the API is running.';
 }

@@ -1,3 +1,4 @@
+// PURPOSE: Plant HMI UI component used by the SWARM P&ID screens.
 import {
   Box, Chip, Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Typography,
 } from '@mui/material';

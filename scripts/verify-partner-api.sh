@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# PURPOSE: Operational script for SWARM deployment or maintenance.
 # Verify SWARM Partner API connectivity (run after creating org + key in emPOWER Partners UI).
 # Usage: ./scripts/verify-partner-api.sh <api_key> [plant_id] [base_url]
 

@@ -1,3 +1,4 @@
+// PURPOSE: Spring Boot configuration/startup component for SWARM.
 package com.biopower.config;
 
 import com.biopower.model.entity.PartnerOrganization;
@@ -20,7 +21,7 @@ import java.util.List;
  */
 @Component
 @Order(100)
-@ConditionalOnProperty(name = "biopower.swarm.partner.sandbox.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "biopower.swarm.partner.sandbox.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 public class PartnerIntegrationInitializer implements CommandLineRunner {

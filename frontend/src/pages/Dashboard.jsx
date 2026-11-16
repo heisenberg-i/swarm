@@ -1,3 +1,4 @@
+// PURPOSE: Plant live-monitoring dashboard and empty states.
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -15,6 +16,7 @@ import { plantAPI, dashboardAPI, alertAPI, deviceAPI, hmiAPI } from '../services
 import { fetchEspStatus } from '../utils/espClient';
 import { SENSOR_LABELS, SENSOR_UNITS, getHealthColor, formatDate } from '../utils/constants';
 import { pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsive';
+import EmptyState from '../components/common/EmptyState';
 
 /** How often the dashboard refreshes from the server (ms). */
 const DASHBOARD_POLL_MS = 10000;
@@ -38,11 +40,17 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncingChip, setSyncingChip] = useState('');
+  const [loadError, setLoadError] = useState('');
 
   const fetchData = () => {
     if (!selectedPlant) return;
-    dashboardAPI.getDashboard(selectedPlant).then(({ data }) => setDashboard(data.data));
-    alertAPI.getAll({ plantId: selectedPlant, status: 'ACTIVE' }).then(({ data }) => setAlerts((data.data || []).slice(0, 5)));
+    setLoadError('');
+    dashboardAPI.getDashboard(selectedPlant)
+      .then(({ data }) => setDashboard(data.data))
+      .catch(() => setLoadError('Unable to load dashboard data. Retrying…'));
+    alertAPI.getAll({ plantId: selectedPlant, status: 'ACTIVE' })
+      .then(({ data }) => setAlerts((data.data || []).slice(0, 5)))
+      .catch(() => {});
     const plant = plants.find((p) => Number(p.plantId) === Number(selectedPlant));
     if (plant?.hmiEnabled) {
       hmiAPI.getState(selectedPlant).then(({ data }) => setHmiState(data.data)).catch(() => setHmiState(null));
@@ -60,6 +68,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
     plantAPI.getAll().then(({ data }) => {
       const list = data.data || [];
       setPlants(list);
+      if (list.length === 0) setLoadError('');
       const pairedPlant = sessionStorage.getItem('dashboardPlantId');
       if (pairedPlant && list.some((p) => p.plantId === Number(pairedPlant))) {
         setSelectedPlant(Number(pairedPlant));
@@ -115,7 +124,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
     const ip = device.deviceIp || creds.ip;
     const password = creds.password;
     if (!ip || !password) {
-      window.alert('Re-pair the device from Connect Device to refresh readings (device password required).');
+      window.alert('Re-pair the hub from Field Devices → Pair Sensor Hub to refresh readings (device password required).');
       return;
     }
     setSyncingChip(device.chipId);
@@ -151,11 +160,24 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
 
+  if (!selectedPlant) {
+    return (
+      <Box>
+        {!embedded && <Typography variant="h5" sx={pageTitleSx}>Live Monitoring Dashboard</Typography>}
+        <EmptyState
+          title="No plants assigned"
+          description="Control Center needs to create a tenant, Super Admin, and plant before live readings appear here."
+        />
+      </Box>
+    );
+  }
+
   const readings = dashboard?.currentReadings || {};
   const pairedDevices = dashboard?.pairedDevices || [];
   const visibleSensorTypes = dashboard?.visibleSensorTypes || [];
-  const healthScore = dashboard?.healthScore || 0;
-  const healthStatus = dashboard?.healthStatus || 'GOOD';
+  const hasHealthScore = dashboard?.healthScore != null;
+  const healthScore = hasHealthScore ? dashboard.healthScore : 0;
+  const healthStatus = dashboard?.healthStatus || null;
 
   const STALE_MS = 10 * 60 * 1000;
 
@@ -190,6 +212,8 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
           )}
         </Box>
       )}
+
+      {loadError && <Alert severity="warning" sx={{ mb: 2 }}>{loadError}</Alert>}
 
       {hmiState && (
         <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #1e2430 0%, #0066CC 100%)', color: 'white' }}>
@@ -236,13 +260,18 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} md={4}>
-          <Card sx={{ bgcolor: getHealthColor(healthStatus), color: 'white' }}>
+          <Card sx={{ bgcolor: hasHealthScore ? getHealthColor(healthStatus) : 'grey.600', color: 'white' }}>
             <CardContent>
               <Typography variant="subtitle2">Plant Health Status</Typography>
-              <Typography variant="h3" fontWeight={700}>{healthScore}/100</Typography>
-              <Chip label={healthStatus} sx={{ mt: 1, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }} />
+              <Typography variant="h3" fontWeight={700}>
+                {hasHealthScore ? `${healthScore}/100` : '—'}
+              </Typography>
+              <Chip
+                label={hasHealthScore ? healthStatus : 'No score yet'}
+                sx={{ mt: 1, bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
+              />
               <LinearProgress
-                variant="determinate" value={healthScore}
+                variant="determinate" value={hasHealthScore ? healthScore : 0}
                 sx={{ mt: 2, bgcolor: 'rgba(255,255,255,0.3)', '& .MuiLinearProgress-bar': { bgcolor: 'white' } }}
               />
             </CardContent>
@@ -297,7 +326,10 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
                 <TableRow>
                   <TableCell colSpan={9} align="center">
                     <Typography color="text.secondary" sx={{ py: 2 }}>
-                      No paired devices for this plant. Use Connect Device to pair a SWARM MODEL hub.
+                      No paired hubs for this plant.{' '}
+                      <Button size="small" onClick={() => navigate('/sensors?tab=pair')}>
+                        Pair Sensor Hub
+                      </Button>
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -324,7 +356,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
                         </Box>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
-                          IP not saved yet — pair on Connect Device or wait for hub data
+                          IP not saved yet — pair the hub under Field Devices or wait for the next reading
                         </Typography>
                       )}
                     </TableCell>

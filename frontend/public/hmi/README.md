@@ -1,3 +1,4 @@
+# PURPOSE: SWARM project file: README.md
 # P&ID diagram assets
 
 | File | Purpose |

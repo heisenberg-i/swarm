@@ -1,3 +1,4 @@
+// PURPOSE: Frontend helper used by SWARM pages (responsive).
 /** Shared responsive layout sx — use for consistent phone / tablet / laptop layouts */
 
 export const pageTitleSx = {

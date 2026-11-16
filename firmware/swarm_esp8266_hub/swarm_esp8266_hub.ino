@@ -1,3 +1,4 @@
+// PURPOSE: ESP firmware source swarm_esp8266_hub.ino.
 /*
  * SWARM Sensor Hub — SWARM MODEL + DHT11 + MQ5
  *

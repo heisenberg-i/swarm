@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# PURPOSE: Operational script for SWARM deployment or maintenance.
 # Railway GraphQL helpers for waking/stopping standby services from the Pi.
 # Requires: curl, jq, RAILWAY_TOKEN
 

@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # SWARM Production Hosting (Railway)
 
 **Last verified:** 2026-07-30
@@ -162,11 +163,9 @@ railway up ./frontend --path-as-root -s swarm_webapp -d -y
 
 ---
 
-## Demo logins
+## First Control Center admin
 
-| Role | Email | Password |
-|------|-------|----------|
-| Control Center Admin | swarm.nfi@gmail.com | Swarm@2026 |
+Do not ship default passwords. Set `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD` on first primary boot if no Control Center admin exists.
 
 ---
 

@@ -1,3 +1,4 @@
+// PURPOSE: Frontend helper used by SWARM pages (homeRoute).
 const APP_ORIGIN = import.meta.env.VITE_APP_ORIGIN || 'https://app.swarm.co.in';
 const CONTROL_ORIGIN = import.meta.env.VITE_CONTROL_CENTER_ORIGIN || 'https://control.swarm.co.in';
 

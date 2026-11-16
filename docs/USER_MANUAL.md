@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # User Manual
 
 ## BIOPOWER AI-IoT Plant Health Monitoring System
@@ -43,11 +44,9 @@ In the web app, open **User Manual** in the sidebar (`/help`). Content is filter
 2. Enter your registered email.
 3. Check your email for reset instructions.
 
-### Demo credentials
+### First login
 
-| Role | Email | Password |
-|------|-------|----------|
-| Control Center Admin | swarm.nfi@gmail.com | Swarm@2026 |
+There are no demo passwords. Ask nanoFarm / Control Center for an invited account, or provision the first Control Center admin with `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD`.
 
 ---
 

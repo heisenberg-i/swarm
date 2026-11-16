@@ -1,3 +1,4 @@
+// PURPOSE: Frontend helper used by SWARM pages (constants).
 export const HEALTH_COLORS = {
   EXCELLENT: '#00A86B',
   GOOD: '#28A745',

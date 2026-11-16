@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// PURPOSE: SWARM project file: android-gradle.js
 /**
  * Cross-platform Gradle wrapper runner for Capacitor Android builds.
  * Usage: node scripts/android-gradle.js assembleDebug|assembleRelease

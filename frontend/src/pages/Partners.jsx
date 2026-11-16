@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Partners.
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,

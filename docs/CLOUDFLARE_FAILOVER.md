@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # Cloudflare Failover Setup
 
 **Goal:** 10-second health checks; automatic cutover from Raspberry Pi (primary) to Railway (standby) when RPi is unhealthy.

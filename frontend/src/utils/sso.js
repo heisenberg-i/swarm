@@ -1,3 +1,4 @@
+// PURPOSE: Frontend helper used by SWARM pages (sso).
 import { authAPI } from '../services/api';
 import { isNativeApp } from './networkError';
 

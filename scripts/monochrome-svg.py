@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# PURPOSE: Operational script for SWARM deployment or maintenance.
 """Publish P&ID SVG and apply monochrome filter (removes pipe color coding)."""
 import re
 import sys

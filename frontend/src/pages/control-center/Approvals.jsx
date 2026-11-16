@@ -1,3 +1,4 @@
+// PURPOSE: Control Center page for tenant onboarding and plant assignment.
 import { useEffect, useState } from 'react';
 import {
   Box, Typography, Card, CardContent, Button, Table, TableBody, TableCell,
@@ -60,7 +61,7 @@ export default function Approvals() {
     setError('');
     try {
       await controlCenterAPI.approveUser(target.id, {
-        companyId: Number(companyId),
+        companyId,
         role,
       });
       setSuccess(`${target.email} approved`);

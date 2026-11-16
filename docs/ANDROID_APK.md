@@ -1,3 +1,4 @@
+# PURPOSE: Operator/developer documentation for SWARM.
 # SWARM Android APK (Capacitor)
 
 The mobile app is the **same React web app** wrapped in a native Android WebView via [Capacitor](https://capacitorjs.com/). No UI/UX changes — phone and tablet use the existing responsive layouts.

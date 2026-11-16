@@ -1,3 +1,4 @@
+// PURPOSE: SWARM plant-app page: Notifications.
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, Grid, Chip, List, ListItem, ListItemText, CircularProgress,
