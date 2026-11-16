@@ -23,7 +23,7 @@ docker compose up -d --build
 | PostgreSQL | none | Internal `postgres:5432` only |
 | MQTT | none | Internal `mosquitto:1883`; app ingest stays off unless `MQTT_ENABLED=true` |
 
-Open http://localhost. There are no default passwords. The first Control Center admin is created from `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD` when none exists.
+Open http://localhost. A backup dump is optional: an empty database is initialized automatically. The first Control Center admin is created from `SWARM_BOOTSTRAP_ADMIN_EMAIL` and `SWARM_BOOTSTRAP_ADMIN_PASSWORD` when none exists. See [DOCKER.md](./DOCKER.md).
 
 ## Manual backend (optional)
 

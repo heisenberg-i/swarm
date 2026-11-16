@@ -1,10 +1,11 @@
 # PURPOSE: Points at Flyway as the canonical SWARM PostgreSQL schema.
--- SWARM canonical schema lives in Flyway:
+-- SWARM canonical schema lives in:
+--   database/swarm-core-init.sql  (tenants, devices, sensor_messages, sensor_readings)
 --   backend/src/main/resources/db/migration/V1__swarm_app_schema.sql
 --   backend/src/main/resources/db/migration/V2__seed_app_and_h2_data.sql
 --
 -- Application database: PostgreSQL 16 + TimescaleDB (database `swarm`).
--- Existing telemetry tables MUST NOT be dropped or recreated:
+-- Existing telemetry tables MUST NOT be dropped or recreated on a live database:
 --   tenants, devices, sensor_messages, sensor_readings (hypertable)
 --
 -- This file is a reference only. Do not execute it against the live database.

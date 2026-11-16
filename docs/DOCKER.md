@@ -11,7 +11,9 @@ docker compose up -d --build
 - Frontend: http://localhost
 - API: http://localhost:8080/api
 - PostgreSQL is **not** published on the host. It lives on the `swarm` Docker network as `postgres:5432`.
-- The first start restores `backups/swarm_pg_*.dump` into the `swarm_pg_data` volume, then runs `database/reset-non-nova.sql`. Later starts skip restore (marker file in the volume).
+- First start of an **empty** database creates the four core tables (`tenants`, `devices`, `sensor_messages`, `sensor_readings` hypertable) from `database/swarm-core-init.sql`. Flyway then applies `V1`/`V2`.
+- If `backups/swarm_pg_*.dump` is present and the database is empty, that dump is restored and `database/reset-non-nova.sql` runs once.
+- Later starts skip bootstrap work (marker file in the `swarm_bootstrap_state` volume).
 
 ## Persistent storage
 
@@ -22,7 +24,24 @@ docker compose down
 docker volume rm swarm_webapp_swarm_pg_data
 ```
 
-That also discards the bootstrap marker, so the next `up` restores the dump and resets non-NOVA rows again.
+That also discards the bootstrap marker. The next `up` initializes an empty core schema, or restores a dump if `backups/swarm_pg_*.dump` exists.
+
+## Database bootstrap
+
+`postgres-bootstrap` runs once after Postgres is healthy and before the backend starts.
+
+| Database state | Backup dump | Result |
+|----------------|-------------|--------|
+| Empty (no public tables) | none | Create core Timescale schema from `database/swarm-core-init.sql`. |
+| Empty | `backups/swarm_pg_*.dump` | Restore the newest dump, then run `database/reset-non-nova.sql`. |
+| Core tables already present | ignored | Skip. Marker is recorded if missing. |
+| Partial core schema | any | Fail. Backend does not start. |
+| Other public tables, no core schema | none | Fail. Nothing is overwritten. |
+| Marker present, core tables missing | any | Fail. |
+
+`sensor_readings` is a hypertable on `recorded_at` with a 7-day chunk interval and compression off. NOVA tables are not dropped or truncated.
+
+Restarting Compose does not re-initialize. Do not run SQL by hand.
 
 ## Retiring host PostgreSQL (`192.168.29.229:5433`)
 

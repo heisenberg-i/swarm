@@ -36,6 +36,7 @@ services:
       - swarm_bootstrap_state:/state
       - ./backups:/backups:ro
       - ./database/reset-non-nova.sql:/reset/reset-non-nova.sql:ro
+      - ./database/swarm-core-init.sql:/init/swarm-core-init.sql:ro
       - ./docker/postgres/bootstrap.sh:/bootstrap.sh:ro
     entrypoint: ["/bin/bash", "/bootstrap.sh"]
     networks:

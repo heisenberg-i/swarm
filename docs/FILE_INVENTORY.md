@@ -238,10 +238,11 @@
 | `backend/src/test/java/com/biopower/util/DeviceSecretHasherTest.java` | Automated test covering SWARM DeviceSecretHasherTest. |
 | `backend/src/test/java/com/biopower/util/ExternalOrgIdsTest.java` | Automated test covering SWARM ExternalOrgIdsTest. |
 | `database/reset-non-nova.sql` | Deletes non-NOVA application rows after backup restore. |
+| `database/swarm-core-init.sql` | Creates the four core Timescale tables on a fresh empty database. |
 | `database/schema.sql` | Points at Flyway as the canonical SWARM PostgreSQL schema. |
 | `docker-compose.yml` | Defines the production SWARM Docker Compose services. |
 | `docker/mosquitto/mosquitto.conf` | Mosquitto listener config for optional SWARM MQTT ingest. |
-| `docker/postgres/bootstrap.sh` | Restores the SWARM dump into Docker Timescale and runs the non-NOVA reset once. |
+| `docker/postgres/bootstrap.sh` | Initializes empty Timescale core schema or restores a dump once. |
 | `docs/ANDROID_APK.md` | Operator/developer documentation for SWARM. |
 | `docs/API.md` | Operator/developer documentation for SWARM. |
 | `docs/CLOUDFLARE_FAILOVER.md` | Operator/developer documentation for SWARM. |
