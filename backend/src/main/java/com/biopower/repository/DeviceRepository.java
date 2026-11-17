@@ -21,6 +21,8 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     List<Device> findByPlantId(Long plantId);
 
+    List<Device> findByTenantId(UUID tenantId);
+
     List<Device> findByChipId(String chipId);
 
     boolean existsByDeviceUid(String deviceUid);

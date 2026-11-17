@@ -9,6 +9,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class PlantRequest {
@@ -22,4 +23,6 @@ public class PlantRequest {
     private LocalDate installationDate;
     private PlantStatus status;
     private List<String> enabledSensorTypes;
+    /** Optional tenant assignment when creating from Control Center. */
+    private UUID companyId;
 }

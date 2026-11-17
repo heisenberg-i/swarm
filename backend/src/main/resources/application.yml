@@ -97,6 +97,10 @@ biopower:
     nova-messages-days: ${NOVA_MESSAGE_RETENTION_DAYS:90}
   swarm:
     public-api-url: ${SWARM_PUBLIC_API_URL:}
+    mqtt-public-host: ${SWARM_MQTT_PUBLIC_HOST:127.0.0.1}
+    mqtt-public-port: ${SWARM_MQTT_PUBLIC_PORT:1884}
+    mqtt-internal-host: ${SWARM_MQTT_INTERNAL_HOST:mosquitto}
+    mqtt-internal-port: ${SWARM_MQTT_INTERNAL_PORT:1883}
     partner:
       sandbox:
         enabled: ${SWARM_PARTNER_SANDBOX_ENABLED:false}

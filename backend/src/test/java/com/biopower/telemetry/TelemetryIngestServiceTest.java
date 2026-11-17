@@ -134,6 +134,46 @@ class TelemetryIngestServiceTest {
     }
 
     @Test
+    void mqttMultiReadingPersistsEachChannel() {
+        DeviceChannel second = DeviceChannel.builder()
+                .id(2L)
+                .deviceId(11L)
+                .channelId("2")
+                .sensorNodeId(101L)
+                .measurementType(SensorType.METHANE)
+                .engineeringUnit("ppm")
+                .slope(1.0)
+                .intercept(0.0)
+                .active(true)
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(principal());
+        when(deviceRepository.findById(11L)).thenReturn(Optional.of(device));
+        when(sensorMessageRepository.existsByMessageId("mqtt-2")).thenReturn(false);
+        when(deviceChannelRepository.findByDeviceIdAndChannelId(11L, "1")).thenReturn(Optional.of(channel));
+        when(deviceChannelRepository.findByDeviceIdAndChannelId(11L, "2")).thenReturn(Optional.of(second));
+        when(sensorNodeRepository.findById(101L)).thenReturn(Optional.of(node));
+        when(sensorReadingRepository.save(any())).thenAnswer(inv -> {
+            SensorReading r = inv.getArgument(0);
+            r.setId(r.getChannelId().equals("1") ? 1L : 2L);
+            return r;
+        });
+
+        IngestResult result = service.ingest(IngestEnvelope.builder()
+                .transport(IngestTransport.MQTT)
+                .plantId(7L)
+                .deviceUid("SWARM-HUB-ABCD")
+                .messageId("mqtt-2")
+                .readings(List.of(
+                        IngestPoint.builder().channelId("1").value(21.0).build(),
+                        IngestPoint.builder().channelId("2").value(480.0).build()))
+                .build());
+
+        assertEquals(2, result.getReadings().size());
+        verify(sensorReadingRepository, times(2)).save(any());
+        verify(sensorMessageRepository).save(any());
+    }
+
+    @Test
     void duplicateMessageIdIsIdempotent() {
         SecurityContextHolder.getContext().setAuthentication(principal());
         when(deviceRepository.findById(11L)).thenReturn(Optional.of(device));
@@ -174,6 +214,24 @@ class TelemetryIngestServiceTest {
                 .deviceUid("SWARM-HUB-OTHER")
                 .readings(List.of(IngestPoint.builder().channelId("1").value(1.0).build()))
                 .build()));
+    }
+
+    @Test
+    void unknownChannelIsRejected() {
+        SecurityContextHolder.getContext().setAuthentication(principal());
+        when(deviceRepository.findById(11L)).thenReturn(Optional.of(device));
+        when(sensorMessageRepository.existsByMessageId(anyString())).thenReturn(false);
+        when(deviceChannelRepository.findByDeviceIdAndChannelId(11L, "99")).thenReturn(Optional.empty());
+
+        assertThrows(BadRequestException.class, () -> service.ingest(IngestEnvelope.builder()
+                .transport(IngestTransport.MQTT)
+                .plantId(7L)
+                .deviceUid("SWARM-HUB-ABCD")
+                .messageId("unknown-ch")
+                .readings(List.of(IngestPoint.builder().channelId("99").value(1.0).build()))
+                .build()));
+        verify(ingestRejectedRepository).save(any());
+        verify(sensorReadingRepository, never()).save(any());
     }
 
     @Test

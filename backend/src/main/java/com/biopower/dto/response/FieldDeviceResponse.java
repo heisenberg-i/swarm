@@ -8,12 +8,15 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 public class FieldDeviceResponse {
     private Long id;
     private String deviceUid;
+    private UUID tenantId;
+    private String tenantName;
     private Long plantId;
     private String plantName;
     private String chipId;

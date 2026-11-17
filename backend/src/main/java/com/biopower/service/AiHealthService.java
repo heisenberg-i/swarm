@@ -348,10 +348,16 @@ public class AiHealthService {
         if (visibleTypes == null || visibleTypes.isEmpty()) {
             return readings;
         }
-        for (SensorType type : visibleTypes) {
-            sensorReadingRepository.findFirstByPlantIdAndSensorTypeOrderByRecordedAtDesc(plantId, type)
-                    .filter(r -> allowedNodeIds == null || allowedNodeIds.contains(r.getNodeId()))
-                    .ifPresent(r -> readings.put(type, r.getValue()));
+        Set<SensorType> wanted = new HashSet<>(visibleTypes);
+        for (SensorReading reading : sensorReadingRepository.findLatestByPlantId(plantId)) {
+            SensorType type = reading.getSensorType();
+            if (type == null || !wanted.contains(type)) {
+                continue;
+            }
+            if (allowedNodeIds != null && (reading.getNodeId() == null || !allowedNodeIds.contains(reading.getNodeId()))) {
+                continue;
+            }
+            readings.putIfAbsent(type, reading.getValue());
         }
         return readings;
     }

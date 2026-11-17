@@ -68,6 +68,14 @@ public class FieldDeviceQueryService {
         return toResponse(device);
     }
 
+    public FieldDeviceResponse describe(Device device) {
+        return toResponse(device);
+    }
+
+    public FieldDeviceChannelResponse describeChannel(DeviceChannel channel) {
+        return toChannel(channel);
+    }
+
     private FieldDeviceResponse toResponse(Device device) {
         Plant plant = plantRepository.findById(device.getPlantId()).orElse(null);
         List<DeviceChannel> channels = deviceChannelRepository.findByDeviceIdOrderByChannelIdAsc(device.getId());
@@ -75,6 +83,8 @@ public class FieldDeviceQueryService {
         return FieldDeviceResponse.builder()
                 .id(device.getId())
                 .deviceUid(device.getDeviceUid())
+                .tenantId(device.getTenantId())
+                .tenantName(plant != null && plant.getCompany() != null ? plant.getCompany().getName() : null)
                 .plantId(device.getPlantId())
                 .plantName(plant != null ? plant.getPlantName() : null)
                 .chipId(device.getChipId())

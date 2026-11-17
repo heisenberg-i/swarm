@@ -2,12 +2,10 @@
 package com.biopower.dto.request;
 
 import com.biopower.model.enums.SensorType;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class DeviceChannelRequest {
-    @NotBlank
     private String channelId;
     private SensorType measurementType;
     private String engineeringUnit;

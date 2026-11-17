@@ -106,6 +106,50 @@ class MqttTelemetryHandlerTest {
     }
 
     @Test
+    void uuidTenantMismatchIsRejected() {
+        when(deviceRepository.findFirstByDeviceUid("SWARM-HUB-ABCD")).thenReturn(Optional.of(device));
+        String otherTenant = "22222222-2222-4222-8222-222222222222";
+        String topic = "swarm/v1/" + otherTenant + "/7/SWARM-HUB-ABCD/telemetry";
+        String payload = """
+                {"schemaVersion":"1.0","deviceId":"SWARM-HUB-ABCD","messageId":"x",
+                 "readings":[{"channelId":1,"value":1}]}
+                """;
+        assertThrows(UnauthorizedException.class,
+                () -> handler.handle(topic, payload, "SWARM-HUB-ABCD", "swd_secret"));
+        verify(telemetryIngestService, never()).ingest(any());
+    }
+
+    @Test
+    void uuidTenantMatchIsIngested() {
+        when(deviceRepository.findFirstByDeviceUid("SWARM-HUB-ABCD")).thenReturn(Optional.of(device));
+        when(telemetryIngestService.ingest(any())).thenReturn(IngestResult.builder().build());
+        String topic = "swarm/v1/" + device.getTenantId() + "/7/SWARM-HUB-ABCD/telemetry";
+        String payload = """
+                {"schemaVersion":"1.0","deviceId":"SWARM-HUB-ABCD","messageId":"m-ok",
+                 "readings":[{"channelId":1,"value":38.5}]}
+                """;
+        handler.handle(topic, payload, "SWARM-HUB-ABCD", "swd_secret");
+        verify(telemetryIngestService).ingest(any());
+    }
+
+    @Test
+    void unknownDeviceIsRejected() {
+        when(deviceRepository.findFirstByDeviceUid("SWARM-HUB-ABCD")).thenReturn(Optional.empty());
+        assertThrows(UnauthorizedException.class,
+                () -> handler.handle("swarm/v1/_/7/SWARM-HUB-ABCD/telemetry",
+                        "{\"readings\":[{\"channelId\":1,\"value\":1}]}",
+                        "SWARM-HUB-ABCD", "swd_secret"));
+        verify(telemetryIngestService, never()).ingest(any());
+    }
+
+    @Test
+    void invalidJsonIsRejected() {
+        assertThrows(com.biopower.exception.BadRequestException.class,
+                () -> handler.handle("swarm/v1/_/7/SWARM-HUB-ABCD/telemetry", "{not-json", null, null));
+        verify(telemetryIngestService, never()).ingest(any());
+    }
+
+    @Test
     void topicDevicePatternParses() {
         var matcher = MqttTelemetryHandler.SWARM_V1_TELEMETRY.matcher(
                 "swarm/v1/_/42/SWARM-HUB-ZZ/telemetry");

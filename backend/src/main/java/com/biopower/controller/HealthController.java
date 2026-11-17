@@ -42,10 +42,12 @@ public class HealthController {
         Map<String, Object> mqtt = new LinkedHashMap<>();
         mqtt.put("enabled", mqttEnabled);
         mqtt.put("configured", mqttConnectionHealth.isConfigured());
+        mqtt.put("connected", mqttEnabled && mqttConnectionHealth.isConnected());
         mqtt.put("brokerUrl", mqttEnabled ? mqttConnectionHealth.getBrokerUrl() : null);
         mqtt.put("topics", mqttEnabled ? mqttConnectionHealth.getTopics() : new String[0]);
         mqtt.put("messagesReceived", mqttConnectionHealth.getMessagesReceived());
         mqtt.put("failures", mqttConnectionHealth.getFailures());
+        mqtt.put("lastConnectedAt", mqttConnectionHealth.getLastConnectedAt());
         mqtt.put("lastMessageAt", mqttConnectionHealth.getLastMessageAt());
         mqtt.put("lastError", mqttConnectionHealth.getLastError());
         body.put("mqtt", mqtt);

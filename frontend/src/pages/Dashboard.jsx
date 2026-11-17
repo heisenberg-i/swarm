@@ -14,7 +14,8 @@ import {
 } from '@mui/icons-material';
 import { plantAPI, dashboardAPI, alertAPI, deviceAPI, hmiAPI } from '../services/api';
 import { fetchEspStatus } from '../utils/espClient';
-import { SENSOR_LABELS, SENSOR_UNITS, getHealthColor, formatDate } from '../utils/constants';
+import { getHealthColor, formatDate } from '../utils/constants';
+import useSensorCatalog from '../utils/useSensorCatalog';
 import { pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsive';
 import EmptyState from '../components/common/EmptyState';
 
@@ -41,6 +42,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
   const [loading, setLoading] = useState(true);
   const [syncingChip, setSyncingChip] = useState('');
   const [loadError, setLoadError] = useState('');
+  const { labels, units } = useSensorCatalog();
 
   const fetchData = () => {
     if (!selectedPlant) return;
@@ -395,7 +397,7 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
         <Card sx={{ mb: 3 }}>
           <CardContent>
             <Typography color="text.secondary">
-              No sensors configured for this project yet. Super admin can enable hardware under Plants.
+              No sensors configured for this plant yet. Register devices and channels in Control Center, or add sensors in the Swarm app.
             </Typography>
           </CardContent>
         </Card>
@@ -407,9 +409,9 @@ export default function Dashboard({ fixedPlantId, embedded = false, hidePlantSel
                 <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{ color: 'primary.main' }}>{sensorIcons[type] || <Thermostat />}</Box>
                   <Box>
-                    <Typography variant="caption" color="text.secondary">{SENSOR_LABELS[type] || type}</Typography>
+                    <Typography variant="caption" color="text.secondary">{labels[type] || type}</Typography>
                     <Typography variant="h6" fontWeight={600}>
-                      {readings[type] != null ? readings[type].toFixed(1) : '--'} {SENSOR_UNITS[type] || ''}
+                      {readings[type] != null ? readings[type].toFixed(1) : '--'} {units[type] || ''}
                     </Typography>
                   </Box>
                 </CardContent>

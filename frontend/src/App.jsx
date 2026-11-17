@@ -29,6 +29,9 @@ import PlantInventory from './pages/control-center/PlantInventory';
 import Overview from './pages/control-center/Overview';
 import Approvals from './pages/control-center/Approvals';
 import HmiAccess from './pages/control-center/HmiAccess';
+import Devices from './pages/control-center/Devices';
+import DeviceDetail from './pages/control-center/DeviceDetail';
+import IotStatus from './pages/control-center/IotStatus';
 import { isNativeApp } from './utils/networkError';
 import { getHomeRoute, shouldShowControlCenter } from './utils/homeRoute';
 
@@ -111,6 +114,9 @@ function App() {
           <Route path="plants" element={<PlantInventory />} />
           <Route path="approvals" element={<Approvals />} />
           <Route path="hmi-access" element={<HmiAccess />} />
+          <Route path="devices" element={<Devices />} />
+          <Route path="devices/:id" element={<DeviceDetail />} />
+          <Route path="iot" element={<IotStatus />} />
           <Route path="change-password" element={<ChangePassword />} />
         </Route>
       ) : (

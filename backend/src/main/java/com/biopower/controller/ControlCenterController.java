@@ -4,18 +4,26 @@ package com.biopower.controller;
 import com.biopower.dto.request.ApproveUserRequest;
 import com.biopower.dto.request.AssignPlantsRequest;
 import com.biopower.dto.request.CompanyRequest;
+import com.biopower.dto.request.DeviceChannelRequest;
+import com.biopower.dto.request.DeviceRegisterRequest;
 import com.biopower.dto.request.HmiEnabledRequest;
 import com.biopower.dto.request.PlantRequest;
+import com.biopower.dto.request.PlantUpdateRequest;
 import com.biopower.dto.request.SuperAdminRequest;
 import com.biopower.dto.response.ApiResponse;
 import com.biopower.dto.response.CompanyDetailResponse;
 import com.biopower.dto.response.CompanyResponse;
+import com.biopower.dto.response.ControlCenterIotStatusResponse;
 import com.biopower.dto.response.ControlCenterOverviewResponse;
 import com.biopower.dto.response.ControlCenterUserResponse;
+import com.biopower.dto.response.FieldDeviceChannelResponse;
+import com.biopower.dto.response.FieldDeviceResponse;
+import com.biopower.dto.response.HardwareProvisioningResponse;
 import com.biopower.dto.response.PlantResponse;
 import com.biopower.dto.response.UserResponse;
 import com.biopower.model.enums.CompanyStatus;
 import com.biopower.service.ControlCenterService;
+import com.biopower.service.DeviceProvisioningService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,6 +39,7 @@ import java.util.UUID;
 public class ControlCenterController {
 
     private final ControlCenterService controlCenterService;
+    private final DeviceProvisioningService deviceProvisioningService;
 
     @GetMapping("/overview")
     public ResponseEntity<ApiResponse<ControlCenterOverviewResponse>> overview() {
@@ -51,6 +60,13 @@ public class ControlCenterController {
     @GetMapping("/companies/{id}")
     public ResponseEntity<ApiResponse<CompanyDetailResponse>> getCompany(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(controlCenterService.getCompany(id)));
+    }
+
+    @PatchMapping("/companies/{id}")
+    public ResponseEntity<ApiResponse<CompanyResponse>> updateCompany(
+            @PathVariable UUID id, @Valid @RequestBody CompanyRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Company updated", controlCenterService.updateCompany(id, request)));
     }
 
     @PatchMapping("/companies/{id}/disable")
@@ -125,6 +141,13 @@ public class ControlCenterController {
                 .body(ApiResponse.success("Plant created", controlCenterService.createUnassignedPlant(request)));
     }
 
+    @PatchMapping("/plants/{id}")
+    public ResponseEntity<ApiResponse<PlantResponse>> updatePlant(
+            @PathVariable Long id, @RequestBody PlantUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Plant updated", controlCenterService.updatePlant(id, request)));
+    }
+
     @PatchMapping("/plants/{id}/hmi")
     public ResponseEntity<ApiResponse<PlantResponse>> setPlantHmi(
             @PathVariable Long id, @Valid @RequestBody HmiEnabledRequest request) {
@@ -132,5 +155,50 @@ public class ControlCenterController {
         return ResponseEntity.ok(ApiResponse.success(
                 enabled ? "Plant HMI enabled" : "Plant HMI disabled",
                 controlCenterService.setPlantHmiEnabled(id, enabled)));
+    }
+
+    @GetMapping("/devices")
+    public ResponseEntity<ApiResponse<List<FieldDeviceResponse>>> listDevices(
+            @RequestParam(required = false) UUID tenantId,
+            @RequestParam(required = false) Long plantId) {
+        return ResponseEntity.ok(ApiResponse.success(deviceProvisioningService.listDevices(tenantId, plantId)));
+    }
+
+    @PostMapping("/devices")
+    public ResponseEntity<ApiResponse<HardwareProvisioningResponse>> registerDevice(
+            @Valid @RequestBody DeviceRegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(
+                        "Device registered. Store the secret now; it will not be shown again.",
+                        deviceProvisioningService.register(request)));
+    }
+
+    @GetMapping("/devices/{id}")
+    public ResponseEntity<ApiResponse<FieldDeviceResponse>> getDevice(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(deviceProvisioningService.getDevice(id)));
+    }
+
+    @GetMapping("/devices/{id}/provisioning")
+    public ResponseEntity<ApiResponse<HardwareProvisioningResponse>> getProvisioning(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(deviceProvisioningService.getProvisioning(id)));
+    }
+
+    @PostMapping("/devices/{id}/rotate-secret")
+    public ResponseEntity<ApiResponse<HardwareProvisioningResponse>> rotateSecret(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Device secret rotated. Store it now; it will not be shown again.",
+                deviceProvisioningService.rotateSecret(id)));
+    }
+
+    @PutMapping("/devices/{id}/channels")
+    public ResponseEntity<ApiResponse<FieldDeviceChannelResponse>> upsertChannel(
+            @PathVariable Long id, @Valid @RequestBody DeviceChannelRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Channel saved", deviceProvisioningService.upsertChannel(id, request)));
+    }
+
+    @GetMapping("/iot/status")
+    public ResponseEntity<ApiResponse<ControlCenterIotStatusResponse>> iotStatus() {
+        return ResponseEntity.ok(ApiResponse.success(deviceProvisioningService.iotStatus()));
     }
 }

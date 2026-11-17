@@ -17,6 +17,8 @@ public interface SensorReadingRepositoryCustom {
 
     Optional<SensorReading> findFirstByPlantIdAndSensorTypeOrderByRecordedAtDesc(Long plantId, SensorType sensorType);
 
+    List<SensorReading> findLatestByPlantId(Long plantId);
+
     Optional<SensorReading> findFirstByNodeIdOrderByRecordedAtDesc(Long nodeId);
 
     long countByNodeIdAndRecordedAtAfter(Long nodeId, LocalDateTime since);

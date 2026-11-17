@@ -110,6 +110,10 @@ public class DeviceRegistryService {
         }
     }
 
+    public String allocateDeviceUid(String chipId) {
+        return uniqueUid(chipId);
+    }
+
     @Transactional
     public String rotateSecret(Long deviceId) {
         Device device = deviceRepository.findById(deviceId)

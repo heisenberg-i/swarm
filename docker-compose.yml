@@ -1,4 +1,5 @@
 # PURPOSE: Defines the production SWARM Docker Compose services (TimescaleDB, backend, frontend, MQTT).
+name: swarm_webapp
 services:
   postgres:
     image: timescale/timescaledb:2.30.1-pg16
@@ -49,7 +50,10 @@ services:
     volumes:
       - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - swarm_mqtt_data:/mosquitto/data
-    # Not published: host 1883 is already used by swarm-iot-mosquitto. Broker is reachable as mosquitto:1883 on the swarm network.
+    # Host 1883 is used by swarm-iot-mosquitto. Publish loopback 1884 only so LAN tests can
+    # reach SWARM Mosquitto without competing for 1883. Backend still uses mosquitto:1883.
+    ports:
+      - "127.0.0.1:1884:1883"
     networks:
       - swarm
 

@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import {
   Menu as MenuIcon, Business, Factory, Logout, Password, Dashboard, HowToReg, PrecisionManufacturing,
+  DevicesOther, CellTower,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../common/Logo';
@@ -21,6 +22,8 @@ const menuItems = [
   { text: 'Plant inventory', icon: <Factory />, path: '/plants' },
   { text: 'Approvals', icon: <HowToReg />, path: '/approvals' },
   { text: 'HMI', icon: <PrecisionManufacturing />, path: '/hmi-access' },
+  { text: 'Devices', icon: <DevicesOther />, path: '/devices' },
+  { text: 'MQTT / IoT', icon: <CellTower />, path: '/iot' },
 ];
 
 export default function ControlCenterLayout() {
@@ -91,7 +94,7 @@ export default function ControlCenterLayout() {
               {currentPage}
             </Typography>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.55)', display: { xs: 'none', sm: 'block' } }} noWrap>
-              Swarm tenant onboarding
+              Swarm configuration and onboarding
             </Typography>
           </Box>
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>

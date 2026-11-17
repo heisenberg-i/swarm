@@ -58,11 +58,44 @@ SWARM Compose does not start a second host-published PostgreSQL port, so it does
 
 ## MQTT
 
-Compose runs Eclipse Mosquitto as `swarm-mqtt` on the internal `swarm` network (`mosquitto:1883`). The port is **not** published: host `1883` is already used by `swarm-iot-mosquitto`.
+Compose project name is `swarm_webapp`. Mosquitto is `swarm-mqtt` on the internal network at `mosquitto:1883`. Host `1883` stays with `swarm-iot-mosquitto`. SWARM publishes **loopback only** `127.0.0.1:1884:1883` so a test client on this host can publish without colliding.
 
-The backend sets `MQTT_ENABLED=false` by default. That matches current ingest, which is HTTP (`/api/iot/...`) rather than MQTT. The broker is idle until you opt in.
+Set `MQTT_ENABLED=true` and `MQTT_BROKER=tcp://mosquitto:1883` for the backend. HTTP ingest (`POST /api/iot/data` and `/api/iot/batch`) remains available.
 
-If devices must publish MQTT from outside Docker, add a **non-conflicting** host mapping, for example `127.0.0.1:1884:1883`, and set `MQTT_ENABLED=true` plus `MQTT_BROKER=tcp://mosquitto:1883` for the backend. Do not bind `0.0.0.0:1883` on this host.
+`GET /api/health` MQTT fields:
+
+| Field | Meaning |
+|-------|---------|
+| `enabled` | `MQTT_ENABLED` |
+| `configured` | Adapter bean was created (not proof of a live socket) |
+| `connected` | Broker subscribe succeeded (use this, not `configured`) |
+| `messagesReceived` / `failures` | Ingest counters |
+| `lastError` | Last ingest or connection error (no credentials) |
+
+### End-to-end verification
+
+Do **not** publish fabricated telemetry into the live database. Use a **paired** device, or an isolated broker/database.
+
+1. Broker from the backend container: `docker exec swarm-backend getent hosts mosquitto`
+2. Health: `curl -sS http://127.0.0.1:8080/api/health` — `mqtt.connected` must be `true`.
+3. Mosquitto log: `docker logs swarm-mqtt` shows client `biopower-server-inbound`.
+4. A registered hub publishes to `swarm/v1/{tenantId}/{plantId}/{deviceUid}/telemetry` on `127.0.0.1:1884` (or `mosquitto:1883` from Docker). Payload example (replace ids):
+
+```json
+{
+  "schemaVersion": "1.0",
+  "deviceId": "<deviceUid>",
+  "messageId": "<unique-id>",
+  "timestamp": "2026-11-16T10:00:00Z",
+  "readings": [{"channelId": "<mapped-channel>", "value": 42.0}]
+}
+```
+
+5. Counters: `messagesReceived` increases. Invalid device or payload increases `failures` and writes `ingest_rejected` (not `sensor_readings`).
+6. API (authenticated): `GET /api/dashboard/{plantId}` and `GET /api/analytics/{plantId}?sensorType=METHANE&start=<ISO-Z>&end=<ISO-Z>`. Optional `nodeId` and `deviceUid`.
+7. UI: Dashboard and Analytics poll the same APIs. Inventory shows `lastValue` / Live vs Stale.
+
+Rebuild/restart of `swarm-backend` restarts NOVA in the same JVM. Recreating only `swarm-mqtt` does not.
 
 ## Flyway
 

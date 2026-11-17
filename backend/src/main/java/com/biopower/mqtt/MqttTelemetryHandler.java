@@ -26,6 +26,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,7 +86,7 @@ public class MqttTelemetryHandler {
             existing = dp;
         }
         if (existing != null) {
-            validateTopicMatchesDevice(topicCtx, existing.getPlantId(), existing.getDeviceUid());
+            validateTopicMatchesDevice(topicCtx, existing.getPlantId(), existing.getDeviceUid(), existing.getCompanyId());
             return;
         }
 
@@ -117,7 +118,7 @@ public class MqttTelemetryHandler {
         // Server broker subscription: broker ACL already authenticated the publisher.
         // Identity is taken from the topic/payload device UID and verified against registry.
 
-        validateTopicMatchesDevice(topicCtx, device.getPlantId(), device.getDeviceUid());
+        validateTopicMatchesDevice(topicCtx, device.getPlantId(), device.getDeviceUid(), device.getTenantId());
 
         SecurityContextHolder.getContext().setAuthentication(new DevicePrincipal(
                 device.getId(),
@@ -131,15 +132,28 @@ public class MqttTelemetryHandler {
         ));
     }
 
-    private void validateTopicMatchesDevice(TopicContext topicCtx, Long plantId, String deviceUid) {
+    private void validateTopicMatchesDevice(TopicContext topicCtx, Long plantId, String deviceUid, UUID tenantId) {
         if (topicCtx == null) {
             return;
         }
         if (!topicCtx.plantId().equals(plantId)) {
-            throw new UnauthorizedException("MQTT topic plant does not match device plant");
+            throw new UnauthorizedException("MQTT topic plant does not match registered device plant");
         }
         if (!topicCtx.deviceUid().equalsIgnoreCase(deviceUid)) {
             throw new UnauthorizedException("MQTT topic device does not match authenticated device");
+        }
+        String topicTenant = topicCtx.tenantId();
+        if (topicTenant == null || topicTenant.isBlank() || "_".equals(topicTenant) || tenantId == null) {
+            return;
+        }
+        try {
+            UUID parsed = UUID.fromString(topicTenant);
+            if (!tenantId.equals(parsed)) {
+                throw new UnauthorizedException("MQTT topic tenant does not match registered device tenant");
+            }
+        } catch (IllegalArgumentException notUuid) {
+            // Legacy numeric tenant segments remain accepted for existing firmware/tests.
+            log.debug("MQTT topic tenant '{}' is not a UUID; registered tenant is {}", topicTenant, tenantId);
         }
     }
 
@@ -156,8 +170,11 @@ public class MqttTelemetryHandler {
                     .build());
         }
 
-        Long plantId = topicCtx != null ? topicCtx.plantId()
-                : (root.has("plantId") ? root.get("plantId").asLong() : null);
+        Long plantId = registeredPlantId();
+        if (plantId == null) {
+            plantId = topicCtx != null ? topicCtx.plantId()
+                    : (root.has("plantId") ? root.get("plantId").asLong() : null);
+        }
         String deviceUid = topicCtx != null ? topicCtx.deviceUid() : text(root, "deviceId");
 
         IngestEnvelope envelope = IngestEnvelope.builder()
@@ -181,7 +198,10 @@ public class MqttTelemetryHandler {
                 .sensorType(SensorType.valueOf(root.get("sensorType").asText().toUpperCase()))
                 .value(root.get("value").asDouble())
                 .build();
-        Long plantId = topicCtx != null ? topicCtx.plantId() : root.get("plantId").asLong();
+        Long plantId = registeredPlantId();
+        if (plantId == null) {
+            plantId = topicCtx != null ? topicCtx.plantId() : root.get("plantId").asLong();
+        }
         IngestEnvelope envelope = IngestEnvelope.builder()
                 .transport(IngestTransport.MQTT)
                 .schemaVersion("legacy-mqtt")
@@ -204,6 +224,13 @@ public class MqttTelemetryHandler {
             return null;
         }
         return new TopicContext(m.group(1), Long.parseLong(m.group(2)), m.group(3));
+    }
+
+    private Long registeredPlantId() {
+        if (SecurityContextHolder.getContext().getAuthentication() instanceof DevicePrincipal principal) {
+            return principal.getPlantId();
+        }
+        return null;
     }
 
     private LocalDateTime parseTimestamp(JsonNode node) {

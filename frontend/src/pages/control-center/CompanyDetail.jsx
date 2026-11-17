@@ -4,9 +4,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Card, CardContent, Button, TextField, Grid, Checkbox,
   CircularProgress, Alert, Divider, Chip, Table, TableBody,
-  TableCell, TableHead, TableRow,
+  TableCell, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem,
 } from '@mui/material';
 import { controlCenterAPI } from '../../services/api';
+import CopyableId from '../../components/common/CopyableId';
 
 const plantKey = (p) => Number(p?.plantId ?? p?.id);
 
@@ -27,17 +28,24 @@ export default function CompanyDetail() {
   const [success, setSuccess] = useState('');
   const [adminForm, setAdminForm] = useState({ name: '', email: '', mobile: '', password: '' });
   const [saving, setSaving] = useState(false);
+  const [rename, setRename] = useState('');
+  const [plantOpen, setPlantOpen] = useState(false);
+  const [plantForm, setPlantForm] = useState({ plantName: '', plantType: 'BIOGAS', location: '' });
+  const [devices, setDevices] = useState([]);
 
   const load = () => {
     setLoading(true);
     Promise.all([
       controlCenterAPI.getCompany(id),
       controlCenterAPI.listPlants(),
-    ]).then(([companyRes, plantsRes]) => {
+      controlCenterAPI.listDevices({ tenantId: id }),
+    ]).then(([companyRes, plantsRes, deviceRes]) => {
       const data = companyRes.data.data;
       setDetail(data);
+      setRename(data.company?.name || '');
       setInventory(unwrapList(plantsRes));
       setSelected((data.plants || []).map(plantKey).filter(Number.isFinite));
+      setDevices(deviceRes.data.data || []);
     }).catch((e) => setError(e.response?.data?.message || 'Failed to load company'))
       .finally(() => setLoading(false));
   };
@@ -73,6 +81,48 @@ export default function CompanyDetail() {
     }
   };
 
+  const saveName = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await controlCenterAPI.updateCompany(id, { name: rename });
+      setSuccess('Tenant name updated');
+      load();
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to update tenant');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createPlant = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await controlCenterAPI.createPlant({
+        ...plantForm,
+        companyId: id,
+      });
+      setPlantOpen(false);
+      setPlantForm({ plantName: '', plantType: 'BIOGAS', location: '' });
+      setSuccess('Plant created under this tenant');
+      load();
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to create plant');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setPlantStatus = async (plant, status) => {
+    try {
+      await controlCenterAPI.updatePlant(plant.plantId, { status });
+      load();
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to update plant');
+    }
+  };
+
   const createAdmin = async () => {
     setSaving(true);
     setError('');
@@ -95,7 +145,12 @@ export default function CompanyDetail() {
     <Box>
       <Button onClick={() => navigate('/companies')} sx={{ mb: 2 }}>Back to companies</Button>
       <Typography variant="h5" fontWeight={700} sx={{ mb: 1 }}>{detail.company.name}</Typography>
-      <Chip size="small" label={detail.company.status} color={detail.company.status === 'ACTIVE' ? 'success' : 'default'} sx={{ mb: 3 }} />
+      <Chip size="small" label={detail.company.status} color={detail.company.status === 'ACTIVE' ? 'success' : 'default'} sx={{ mb: 1 }} />
+      <CopyableId label="Tenant ID" value={detail.company.id} />
+      <Box sx={{ display: 'flex', gap: 1, my: 2, flexWrap: 'wrap' }}>
+        <TextField size="small" label="Tenant name" value={rename} onChange={(e) => setRename(e.target.value)} />
+        <Button variant="outlined" disabled={!rename.trim() || saving} onClick={saveName}>Save name</Button>
+      </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
@@ -139,9 +194,12 @@ export default function CompanyDetail() {
         <Grid item xs={12} md={7}>
           <Card>
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 1 }}>Assign plants</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="h6">Assign plants</Typography>
+                <Button size="small" onClick={() => setPlantOpen(true)}>Create plant</Button>
+              </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Check every site this tenant should see in the Swarm app, then save.
+                Check every site this tenant should see in the Swarm app, then save. Plant IDs are what hardware uses in MQTT topics.
               </Typography>
               {assignablePlants.length === 0 && (
                 <Alert severity="info" sx={{ mb: 2 }}>
@@ -178,14 +236,26 @@ export default function CompanyDetail() {
                       onChange={() => togglePlant(pid)}
                       sx={{ pt: 0 }}
                     />
-                    <Box>
+                    <Box sx={{ flex: 1 }}>
                       <Typography sx={{ fontWeight: 600 }}>{p.plantName}</Typography>
+                      <CopyableId label="Plant ID" value={p.plantId} />
                       {p.location && (
                         <Typography variant="body2" color="text.secondary">{p.location}</Typography>
                       )}
                       <Typography variant="caption" color="text.secondary">
                         {(p.activeNodes ?? 0)} connected sensor node{(p.activeNodes === 1) ? '' : 's'}
+                        {p.status ? ` · ${p.status}` : ''}
                       </Typography>
+                      {checked && (
+                        <Box sx={{ mt: 0.5 }} onClick={(e) => e.preventDefault()}>
+                          <Button size="small" onClick={() => setPlantStatus(p, p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')}>
+                            {p.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button size="small" onClick={() => navigate(`/devices?tenantId=${id}&plantId=${p.plantId}`)}>
+                            Devices
+                          </Button>
+                        </Box>
+                      )}
                     </Box>
                   </Box>
                 );
@@ -241,6 +311,41 @@ export default function CompanyDetail() {
         <Grid item xs={12}>
           <Card>
             <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="h6">Devices</Typography>
+                <Button size="small" onClick={() => navigate(`/devices?tenantId=${id}`)}>Register device</Button>
+              </Box>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Device UID</TableCell>
+                    <TableCell>Plant</TableCell>
+                    <TableCell>Kind</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {devices.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4}>No devices for this tenant yet.</TableCell>
+                    </TableRow>
+                  )}
+                  {devices.map((d) => (
+                    <TableRow key={d.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/devices/${d.id}`)}>
+                      <TableCell sx={{ fontFamily: 'ui-monospace, monospace' }}>{d.deviceUid}</TableCell>
+                      <TableCell>{d.plantName || d.plantId}</TableCell>
+                      <TableCell>{d.deviceKind}</TableCell>
+                      <TableCell>{d.connectionStatus || d.lifecycle}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
               <Typography variant="h6" sx={{ mb: 1 }}>Sensors</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Connected nodes on this tenant’s plants and the unassigned pool. Access is who can see that node in the Swarm app.
@@ -260,7 +365,7 @@ export default function CompanyDetail() {
                 <TableBody>
                   {(detail.sensors || []).length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6}>No sensor nodes yet. Pair devices in the Swarm app after the tenant has plants.</TableCell>
+                      <TableCell colSpan={6}>No sensor nodes yet. Register a device and channels, or pair a hub in the Swarm app.</TableCell>
                     </TableRow>
                   )}
                   {(detail.sensors || []).map((s) => (
@@ -286,6 +391,43 @@ export default function CompanyDetail() {
           </Card>
         </Grid>
       </Grid>
+      <Dialog open={plantOpen} onClose={() => setPlantOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Create plant under this tenant</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            sx={{ mt: 1 }}
+            label="Plant name"
+            value={plantForm.plantName}
+            onChange={(e) => setPlantForm({ ...plantForm, plantName: e.target.value })}
+          />
+          <TextField
+            select
+            fullWidth
+            sx={{ mt: 2 }}
+            label="Type"
+            value={plantForm.plantType}
+            onChange={(e) => setPlantForm({ ...plantForm, plantType: e.target.value })}
+          >
+            <MenuItem value="BIOGAS">BIOGAS</MenuItem>
+            <MenuItem value="BIO_CNG">BIO CNG</MenuItem>
+            <MenuItem value="ORGANIC_WASTE">ORGANIC WASTE</MenuItem>
+            <MenuItem value="WASTE_TO_ENERGY">WASTE TO ENERGY</MenuItem>
+          </TextField>
+          <TextField
+            fullWidth
+            sx={{ mt: 2 }}
+            label="Location"
+            value={plantForm.location}
+            onChange={(e) => setPlantForm({ ...plantForm, location: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPlantOpen(false)}>Cancel</Button>
+          <Button variant="contained" disabled={!plantForm.plantName.trim() || saving} onClick={createPlant}>Create</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

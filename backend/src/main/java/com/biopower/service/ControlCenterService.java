@@ -5,6 +5,7 @@ import com.biopower.dto.request.ApproveUserRequest;
 import com.biopower.dto.request.AssignPlantsRequest;
 import com.biopower.dto.request.CompanyRequest;
 import com.biopower.dto.request.PlantRequest;
+import com.biopower.dto.request.PlantUpdateRequest;
 import com.biopower.dto.request.SuperAdminRequest;
 import com.biopower.dto.response.CompanyDetailResponse;
 import com.biopower.dto.response.CompanyResponse;
@@ -72,6 +73,19 @@ public class ControlCenterService {
                 .name(name)
                 .status(CompanyStatus.ACTIVE)
                 .build();
+        return toCompanyResponse(companyRepository.save(company));
+    }
+
+    @Transactional
+    public CompanyResponse updateCompany(UUID id, CompanyRequest request) {
+        Company company = findCompany(id);
+        String name = request.getName().trim();
+        companyRepository.findByNameIgnoreCase(name).ifPresent(existing -> {
+            if (!existing.getId().equals(id)) {
+                throw new BadRequestException("Company name already exists");
+            }
+        });
+        company.setName(name);
         return toCompanyResponse(companyRepository.save(company));
     }
 
@@ -221,7 +235,35 @@ public class ControlCenterService {
                         Set.copyOf(PlantSensorTypes.parseList(request.getEnabledSensorTypes()))))
                 .hmiEnabled(false)
                 .build();
+        if (request.getCompanyId() != null) {
+            plant.setCompany(findCompany(request.getCompanyId()));
+        }
         plant = plantRepository.save(plant);
+        grantPlantToTenantSuperAdmin(plant);
+        return plantService.getPlantById(plant.getPlantId());
+    }
+
+    @Transactional
+    public PlantResponse updatePlant(Long plantId, PlantUpdateRequest request) {
+        Plant plant = plantRepository.findById(plantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plant not found: " + plantId));
+        if (request.getPlantName() != null && !request.getPlantName().isBlank()) {
+            plant.setPlantName(request.getPlantName().trim());
+        }
+        if (request.getLocation() != null) {
+            plant.setLocation(request.getLocation());
+        }
+        if (request.getStatus() != null) {
+            plant.setStatus(request.getStatus());
+        }
+        if (request.getCompanyId() != null) {
+            if (plant.getCompany() != null && !plant.getCompany().getId().equals(request.getCompanyId())) {
+                throw new BadRequestException("Plant already belongs to another tenant");
+            }
+            plant.setCompany(findCompany(request.getCompanyId()));
+        }
+        plantRepository.save(plant);
+        grantPlantToTenantSuperAdmin(plant);
         return plantService.getPlantById(plant.getPlantId());
     }
 
@@ -483,5 +525,19 @@ public class ControlCenterService {
             }
         }
         return null;
+    }
+
+    private void grantPlantToTenantSuperAdmin(Plant plant) {
+        if (plant.getCompany() == null) {
+            return;
+        }
+        userRepository.findByCompanyAndRole(plant.getCompany(), UserRole.SUPER_ADMIN).ifPresent(superAdmin -> {
+            boolean already = superAdmin.getAssignedPlants().stream()
+                    .anyMatch(p -> p.getPlantId().equals(plant.getPlantId()));
+            if (!already) {
+                superAdmin.getAssignedPlants().add(plant);
+                userRepository.save(superAdmin);
+            }
+        });
     }
 }

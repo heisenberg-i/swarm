@@ -152,10 +152,15 @@ export const partnerAPI = {
   revokeApiKey: (id) => api.delete(`/admin/partner/api-keys/${id}`),
 };
 
+export const catalogAPI = {
+  getSensorTypes: () => api.get('/catalog/sensor-types'),
+};
+
 export const controlCenterAPI = {
   listCompanies: () => api.get('/control-center/companies'),
   createCompany: (data) => api.post('/control-center/companies', data),
   getCompany: (id) => api.get(`/control-center/companies/${id}`),
+  updateCompany: (id, data) => api.patch(`/control-center/companies/${id}`, data),
   disableCompany: (id) => api.patch(`/control-center/companies/${id}/disable`),
   enableCompany: (id) => api.patch(`/control-center/companies/${id}/enable`),
   createSuperAdmin: (id, data) => api.post(`/control-center/companies/${id}/super-admin`, data),
@@ -163,7 +168,15 @@ export const controlCenterAPI = {
   listPlants: () => api.get('/control-center/plants'),
   listUnassignedPlants: () => api.get('/control-center/plants/unassigned'),
   createPlant: (data) => api.post('/control-center/plants', data),
+  updatePlant: (id, data) => api.patch(`/control-center/plants/${id}`, data),
   setPlantHmi: (id, enabled) => api.patch(`/control-center/plants/${id}/hmi`, { enabled }),
+  listDevices: (params) => api.get('/control-center/devices', { params }),
+  registerDevice: (data) => api.post('/control-center/devices', data),
+  getDevice: (id) => api.get(`/control-center/devices/${id}`),
+  getProvisioning: (id) => api.get(`/control-center/devices/${id}/provisioning`),
+  rotateDeviceSecret: (id) => api.post(`/control-center/devices/${id}/rotate-secret`),
+  upsertDeviceChannel: (id, data) => api.put(`/control-center/devices/${id}/channels`, data),
+  iotStatus: () => api.get('/control-center/iot/status'),
   overview: () => api.get('/control-center/overview'),
   listUsers: (queue = 'pending') => api.get('/control-center/users', { params: { queue } }),
   approveUser: (id, data) => api.post(`/control-center/users/${id}/approve`, data),

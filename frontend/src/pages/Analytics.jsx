@@ -5,21 +5,25 @@ import {
   ToggleButtonGroup, ToggleButton, CircularProgress, Grid,
 } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { plantAPI, dashboardAPI } from '../services/api';
-import { SENSOR_LABELS, getSensorTypesForPlant } from '../utils/constants';
+import { plantAPI, dashboardAPI, sensorAPI } from '../services/api';
+import { getSensorTypesForPlant } from '../utils/constants';
+import useSensorCatalog from '../utils/useSensorCatalog';
 import EmptyState from '../components/common/EmptyState';
 import { subHours, subDays, subWeeks, subMonths, format } from 'date-fns';
 
 const chartColors = ['#0066CC', '#00A86B', '#DC3545', '#FFC107', '#6f42c1'];
+const ANALYTICS_POLL_MS = 15000;
 
 export default function Analytics({ fixedPlantId, embedded = false, hidePlantSelector = false }) {
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState(fixedPlantId || '');
   const [range, setRange] = useState('day');
-  const [sensorType, setSensorType] = useState('TEMPERATURE');
+  const [sensorType, setSensorType] = useState('');
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [plantSensorTypes, setPlantSensorTypes] = useState([]);
+  const { types, labels } = useSensorCatalog();
 
   useEffect(() => {
     if (fixedPlantId) {
@@ -34,10 +38,28 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
     });
   }, [fixedPlantId]);
 
-  const sensorOptions = useMemo(
-    () => getSensorTypesForPlant(plants.find((p) => p.plantId === Number(selectedPlant))),
-    [plants, selectedPlant],
-  );
+  useEffect(() => {
+    if (!selectedPlant) {
+      setPlantSensorTypes([]);
+      return undefined;
+    }
+    let cancelled = false;
+    sensorAPI.getByPlant(selectedPlant)
+      .then(({ data }) => {
+        if (cancelled) return;
+        const types = [...new Set((data.data || []).map((n) => n.sensorType).filter(Boolean))];
+        setPlantSensorTypes(types);
+      })
+      .catch(() => {
+        if (!cancelled) setPlantSensorTypes([]);
+      });
+    return () => { cancelled = true; };
+  }, [selectedPlant]);
+
+  const sensorOptions = useMemo(() => {
+    if (plantSensorTypes.length > 0) return plantSensorTypes;
+    return getSensorTypesForPlant(plants.find((p) => p.plantId === Number(selectedPlant)), types);
+  }, [plants, selectedPlant, plantSensorTypes, types]);
 
   useEffect(() => {
     if (sensorOptions.length > 0 && !sensorOptions.includes(sensorType)) {
@@ -46,27 +68,43 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
   }, [sensorOptions, sensorType]);
 
   useEffect(() => {
-    if (!selectedPlant) return;
-    setLoading(true);
-    const now = new Date();
-    const ranges = { hour: subHours(now, 1), day: subDays(now, 1), week: subWeeks(now, 1), month: subMonths(now, 1) };
-    const start = ranges[range] || subDays(now, 1);
+    if (!selectedPlant || !sensorType) return undefined;
+    let first = true;
+    const load = () => {
+      if (first) setLoading(true);
+      const now = new Date();
+      const ranges = { hour: subHours(now, 1), day: subDays(now, 1), week: subWeeks(now, 1), month: subMonths(now, 1) };
+      const start = ranges[range] || subDays(now, 1);
+      return dashboardAPI.getAnalytics(selectedPlant, {
+        sensorType,
+        start: start.toISOString(),
+        end: now.toISOString(),
+      }).then(({ data }) => {
+        const formatted = (data.data || []).map((r) => ({
+          time: format(new Date(r.recordedAt), range === 'hour' ? 'HH:mm' : 'MMM dd HH:mm'),
+          value: r.value,
+          unit: r.unit,
+        }));
+        setChartData(formatted);
+        setLoadError('');
+      }).catch((err) => {
+        setChartData([]);
+        const status = err.response?.status;
+        const message = err.response?.data?.message;
+        if (status === 403) {
+          setLoadError('You do not have access to this plant.');
+        } else {
+          setLoadError(message || 'Unable to load analytics for this plant.');
+        }
+      }).finally(() => {
+        first = false;
+        setLoading(false);
+      });
+    };
 
-    dashboardAPI.getAnalytics(selectedPlant, {
-      sensorType,
-      start: start.toISOString().slice(0, 19),
-      end: now.toISOString().slice(0, 19),
-    }).then(({ data }) => {
-      const formatted = (data.data || []).map((r) => ({
-        time: format(new Date(r.recordedAt), range === 'hour' ? 'HH:mm' : 'MMM dd HH:mm'),
-        value: r.value,
-      }));
-      setChartData(formatted);
-      setLoadError('');
-    }).catch(() => {
-      setChartData([]);
-      setLoadError('Unable to load analytics for this plant.');
-    }).finally(() => setLoading(false));
+    load();
+    const interval = setInterval(load, ANALYTICS_POLL_MS);
+    return () => clearInterval(interval);
   }, [selectedPlant, range, sensorType]);
 
   return (
@@ -88,7 +126,7 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
           <FormControl fullWidth size="small">
             <InputLabel>Sensor</InputLabel>
             <Select value={sensorType} label="Sensor" onChange={(e) => setSensorType(e.target.value)}>
-              {sensorOptions.map((s) => <MenuItem key={s} value={s}>{SENSOR_LABELS[s]}</MenuItem>)}
+              {sensorOptions.map((s) => <MenuItem key={s} value={s}>{labels[s] || s}</MenuItem>)}
             </Select>
           </FormControl>
         </Grid>
@@ -104,7 +142,7 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
 
       <Card>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>{SENSOR_LABELS[sensorType]} Trend</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>{labels[sensorType] || sensorType || 'Sensor'} Trend</Typography>
           {!selectedPlant ? (
             <EmptyState
               title="No plant selected"
@@ -128,7 +166,7 @@ export default function Analytics({ fixedPlantId, embedded = false, hidePlantSel
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="value" stroke={chartColors[0]} strokeWidth={2} dot={false} name={SENSOR_LABELS[sensorType]} />
+                <Line type="monotone" dataKey="value" stroke={chartColors[0]} strokeWidth={2} dot={false} name={labels[sensorType] || sensorType} />
               </LineChart>
             </ResponsiveContainer>
           )}

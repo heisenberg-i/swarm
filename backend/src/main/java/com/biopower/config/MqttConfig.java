@@ -15,9 +15,12 @@ import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
 import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
+import org.springframework.integration.mqtt.event.MqttConnectionFailedEvent;
+import org.springframework.integration.mqtt.event.MqttSubscribedEvent;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.integration.mqtt.support.MqttHeaders;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 
@@ -91,19 +94,33 @@ public class MqttConfig {
     @ServiceActivator(inputChannel = "mqttInputChannel")
     public MessageHandler handler() {
         return message -> {
+            Object topicHeader = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC);
+            String topic = topicHeader != null ? topicHeader.toString() : "unknown";
             try {
                 mqttConnectionHealth.markMessageReceived();
-                String payload = message.getPayload().toString();
-                Object topicHeader = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC);
-                String topic = topicHeader != null ? topicHeader.toString() : null;
-                // Server-side subscription uses broker admin credentials; device auth is
+                String payload = message.getPayload() == null ? "" : message.getPayload().toString();
+                // Server-side subscription uses broker credentials; device auth is
                 // enforced from payload/topic via DevicePrincipal resolution in the handler.
                 mqttTelemetryHandler.handle(topic, payload, null, null);
             } catch (Exception e) {
                 mqttConnectionHealth.markFailure(e.getMessage());
-                log.warn("Failed to process MQTT message: {}", e.getMessage());
+                log.warn("MQTT ingest failed topic={}: {}", topic, e.getMessage());
             }
         };
+    }
+
+    @EventListener
+    public void onMqttSubscribed(MqttSubscribedEvent event) {
+        mqttConnectionHealth.markConnected();
+        log.info("MQTT subscribed to {}", String.join(", ", mqttConnectionHealth.getTopics()));
+    }
+
+    @EventListener
+    public void onMqttConnectionFailed(MqttConnectionFailedEvent event) {
+        Throwable cause = event.getCause();
+        String detail = cause != null && cause.getMessage() != null ? cause.getMessage() : "MQTT connection failed";
+        mqttConnectionHealth.markDisconnected(detail);
+        log.warn("MQTT connection failed: {}", detail);
     }
 
     private static String[] distinctTopics(String... topics) {

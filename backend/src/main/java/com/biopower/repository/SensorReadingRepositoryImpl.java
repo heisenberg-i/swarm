@@ -25,13 +25,21 @@ import java.util.UUID;
 @Repository
 public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCustom {
 
+    private static final int HISTORY_LIMIT = 5000;
+
     private static final String SELECT_JOIN = """
             SELECT r.id, r.recorded_at, r.message_id, r.tenant_id, r.device_id, r.channel_id,
-                   r.sensor_type, r.value, r.unit, r.metadata, dr.plant_id, dc.sensor_node_id
+                   r.sensor_type, r.value, r.unit, r.metadata,
+                   COALESCE(dr.plant_id, CAST(jsonb_extract_path_text(r.metadata, 'plant_id') AS bigint)) AS plant_id,
+                   COALESCE(dc.sensor_node_id, CAST(jsonb_extract_path_text(r.metadata, 'node_id') AS bigint)) AS node_id
             FROM sensor_readings r
-            JOIN devices d ON d.tenant_id = r.tenant_id AND d.device_id = r.device_id
-            JOIN device_registry dr ON dr.device_pk = d.id
+            LEFT JOIN devices d ON d.tenant_id = r.tenant_id AND d.device_id = r.device_id
+            LEFT JOIN device_registry dr ON dr.device_pk = d.id
             LEFT JOIN device_channels dc ON dc.device_id = d.id AND dc.channel_id = r.channel_id
+            """;
+
+    private static final String PLANT_MATCH = """
+            COALESCE(dr.plant_id, CAST(jsonb_extract_path_text(r.metadata, 'plant_id') AS bigint)) = :plantId
             """;
 
     private static final String VALUE_NUM = """
@@ -52,7 +60,7 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
     public List<SensorReading> findByPlantAndTypeAndDateRange(Long plantId, SensorType type,
                                                               LocalDateTime start, LocalDateTime end) {
         Query query = entityManager.createNativeQuery(SELECT_JOIN + """
-                WHERE dr.plant_id = :plantId
+                WHERE """ + PLANT_MATCH + """
                   AND LOWER(r.sensor_type) = LOWER(:type)
                   AND r.recorded_at BETWEEN :start AND :end
                 ORDER BY r.recorded_at ASC
@@ -61,6 +69,7 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
         query.setParameter("type", type == null ? null : type.name());
         query.setParameter("start", toTimestamp(start));
         query.setParameter("end", toTimestamp(end));
+        query.setMaxResults(HISTORY_LIMIT);
         return mapList(query.getResultList());
     }
 
@@ -68,13 +77,14 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
     @SuppressWarnings("unchecked")
     public List<SensorReading> findByPlantAndDateRange(Long plantId, LocalDateTime start, LocalDateTime end) {
         Query query = entityManager.createNativeQuery(SELECT_JOIN + """
-                WHERE dr.plant_id = :plantId
+                WHERE """ + PLANT_MATCH + """
                   AND r.recorded_at BETWEEN :start AND :end
                 ORDER BY r.recorded_at ASC
                 """);
         query.setParameter("plantId", plantId);
         query.setParameter("start", toTimestamp(start));
         query.setParameter("end", toTimestamp(end));
+        query.setMaxResults(HISTORY_LIMIT);
         return mapList(query.getResultList());
     }
 
@@ -83,7 +93,7 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
     public Optional<SensorReading> findFirstByPlantIdAndSensorTypeOrderByRecordedAtDesc(Long plantId,
                                                                                         SensorType sensorType) {
         Query query = entityManager.createNativeQuery(SELECT_JOIN + """
-                WHERE dr.plant_id = :plantId
+                WHERE """ + PLANT_MATCH + """
                   AND LOWER(r.sensor_type) = LOWER(:type)
                 ORDER BY r.recorded_at DESC
                 """);
@@ -92,6 +102,26 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
         query.setMaxResults(1);
         List<SensorReading> rows = mapList(query.getResultList());
         return rows.stream().findFirst();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<SensorReading> findLatestByPlantId(Long plantId) {
+        Query query = entityManager.createNativeQuery("""
+                SELECT DISTINCT ON (LOWER(COALESCE(r.sensor_type, '')))
+                       r.id, r.recorded_at, r.message_id, r.tenant_id, r.device_id, r.channel_id,
+                       r.sensor_type, r.value, r.unit, r.metadata,
+                       COALESCE(dr.plant_id, CAST(jsonb_extract_path_text(r.metadata, 'plant_id') AS bigint)) AS plant_id,
+                       COALESCE(dc.sensor_node_id, CAST(jsonb_extract_path_text(r.metadata, 'node_id') AS bigint)) AS node_id
+                FROM sensor_readings r
+                LEFT JOIN devices d ON d.tenant_id = r.tenant_id AND d.device_id = r.device_id
+                LEFT JOIN device_registry dr ON dr.device_pk = d.id
+                LEFT JOIN device_channels dc ON dc.device_id = d.id AND dc.channel_id = r.channel_id
+                WHERE """ + PLANT_MATCH + """
+                ORDER BY LOWER(COALESCE(r.sensor_type, '')), r.recorded_at DESC
+                """);
+        query.setParameter("plantId", plantId);
+        return mapList(query.getResultList());
     }
 
     @Override
@@ -127,9 +157,9 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
     public Double averageValue(Long plantId, SensorType type, LocalDateTime start, LocalDateTime end) {
         Query query = entityManager.createNativeQuery(
                 "SELECT AVG(" + VALUE_NUM + ") FROM sensor_readings r "
-                        + "JOIN devices d ON d.tenant_id = r.tenant_id AND d.device_id = r.device_id "
-                        + "JOIN device_registry dr ON dr.device_pk = d.id "
-                        + "WHERE dr.plant_id = :plantId AND LOWER(r.sensor_type) = LOWER(:type) "
+                        + "LEFT JOIN devices d ON d.tenant_id = r.tenant_id AND d.device_id = r.device_id "
+                        + "LEFT JOIN device_registry dr ON dr.device_pk = d.id "
+                        + "WHERE " + PLANT_MATCH + " AND LOWER(r.sensor_type) = LOWER(:type) "
                         + "AND r.recorded_at BETWEEN :start AND :end");
         query.setParameter("plantId", plantId);
         query.setParameter("type", type == null ? null : type.name());
@@ -145,9 +175,9 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
                                                   SensorType sensorType, LocalDateTime updatedSince,
                                                   LocalDateTime cursorTime, Long cursorId, Pageable pageable) {
         StringBuilder sql = new StringBuilder(SELECT_JOIN);
-        sql.append(" WHERE dr.plant_id IN (:plantIds) ");
+        sql.append(" WHERE COALESCE(dr.plant_id, CAST(jsonb_extract_path_text(r.metadata, 'plant_id') AS bigint)) IN (:plantIds) ");
         if (plantId != null) {
-            sql.append(" AND dr.plant_id = :plantId ");
+            sql.append(" AND ").append(PLANT_MATCH);
         }
         if (nodeId != null) {
             sql.append(" AND (dc.sensor_node_id = :nodeId OR CAST(jsonb_extract_path_text(r.metadata, 'node_id') AS bigint) = :nodeId) ");
@@ -191,9 +221,9 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
     public List<SensorReading> findPartnerRange(List<Long> plantIds, Long plantId, Long nodeId,
                                                 SensorType sensorType, LocalDateTime start, LocalDateTime end) {
         StringBuilder sql = new StringBuilder(SELECT_JOIN);
-        sql.append(" WHERE dr.plant_id IN (:plantIds) AND r.recorded_at BETWEEN :start AND :end ");
+        sql.append(" WHERE COALESCE(dr.plant_id, CAST(jsonb_extract_path_text(r.metadata, 'plant_id') AS bigint)) IN (:plantIds) AND r.recorded_at BETWEEN :start AND :end ");
         if (plantId != null) {
-            sql.append(" AND dr.plant_id = :plantId ");
+            sql.append(" AND ").append(PLANT_MATCH);
         }
         if (nodeId != null) {
             sql.append(" AND (dc.sensor_node_id = :nodeId OR CAST(jsonb_extract_path_text(r.metadata, 'node_id') AS bigint) = :nodeId) ");
@@ -283,7 +313,7 @@ public class SensorReadingRepositoryImpl implements SensorReadingRepositoryCusto
     }
 
     private static Timestamp toTimestamp(LocalDateTime value) {
-        return value == null ? null : Timestamp.from(value.atZone(ZoneId.systemDefault()).toInstant());
+        return value == null ? null : Timestamp.from(value.toInstant(java.time.ZoneOffset.UTC));
     }
 
     private static Instant toInstant(Object value) {

@@ -125,6 +125,7 @@ export default function Companies() {
             <TableHead>
               <TableRow>
                 <TableCell>Company</TableCell>
+                <TableCell>Tenant ID</TableCell>
                 <TableCell>Onboarding</TableCell>
                 <TableCell>Super Admin</TableCell>
                 <TableCell>Plants</TableCell>
@@ -135,7 +136,7 @@ export default function Companies() {
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6}>No tenants match. Create one to start selling Swarm to a customer.</TableCell>
+                  <TableCell colSpan={7}>No tenants match. Create one to start selling Swarm to a customer.</TableCell>
                 </TableRow>
               )}
               {filtered.map((c) => {
@@ -143,6 +144,9 @@ export default function Companies() {
                 return (
                   <TableRow key={c.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/companies/${c.id}`)}>
                     <TableCell>{c.name}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()} sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>
+                      {c.id}
+                    </TableCell>
                     <TableCell><Chip size="small" label={chip.label} color={chip.color} /></TableCell>
                     <TableCell>{c.superAdminEmail || '—'}</TableCell>
                     <TableCell>{c.plantCount}</TableCell>

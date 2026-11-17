@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { controlCenterAPI } from '../../services/api';
+import CopyableId from '../../components/common/CopyableId';
 
 const emptyPlant = {
   plantName: '',
@@ -15,6 +16,7 @@ const emptyPlant = {
   location: '',
   capacity: '',
   feedstockType: '',
+  companyId: '',
 };
 
 export default function PlantInventory() {
@@ -22,6 +24,7 @@ export default function PlantInventory() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get('tab') || 'all';
   const [plants, setPlants] = useState([]);
+  const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
@@ -30,8 +33,11 @@ export default function PlantInventory() {
 
   const load = () => {
     setLoading(true);
-    controlCenterAPI.listPlants()
-      .then(({ data }) => setPlants(data.data || []))
+    Promise.all([controlCenterAPI.listPlants(), controlCenterAPI.listCompanies()])
+      .then(([plantRes, companyRes]) => {
+        setPlants(plantRes.data.data || []);
+        setTenants(companyRes.data.data || []);
+      })
       .catch((e) => setError(e.response?.data?.message || 'Failed to load plants'))
       .finally(() => setLoading(false));
   };
@@ -45,10 +51,11 @@ export default function PlantInventory() {
       await controlCenterAPI.createPlant({
         ...form,
         capacity: form.capacity ? Number(form.capacity) : null,
+        companyId: form.companyId || undefined,
       });
       setOpen(false);
       setForm(emptyPlant);
-      setSearchParams({ tab: 'unassigned' });
+      setSearchParams({ tab: form.companyId ? 'assigned' : 'unassigned' });
       load();
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to create plant');
@@ -88,15 +95,17 @@ export default function PlantInventory() {
             <TableHead>
               <TableRow>
                 <TableCell>Plant</TableCell>
+                <TableCell>Plant ID</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Location</TableCell>
+                <TableCell>Status</TableCell>
                 <TableCell>Tenant</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4}>No plants in this view. Create a plant, then assign it on the tenant page.</TableCell>
+                  <TableCell colSpan={6}>No plants in this view. Create a plant, then assign it on the tenant page.</TableCell>
                 </TableRow>
               )}
               {filtered.map((p) => (
@@ -107,8 +116,10 @@ export default function PlantInventory() {
                   onClick={() => p.companyId && navigate(`/companies/${p.companyId}`)}
                 >
                   <TableCell>{p.plantName}</TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}><CopyableId value={p.plantId} /></TableCell>
                   <TableCell>{p.plantType}</TableCell>
                   <TableCell>{p.location || '—'}</TableCell>
+                  <TableCell>{p.status || '—'}</TableCell>
                   <TableCell>
                     {p.companyName
                       ? <Chip size="small" label={p.companyName} />
@@ -122,7 +133,7 @@ export default function PlantInventory() {
       </Card>
 
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Create plant (unassigned)</DialogTitle>
+        <DialogTitle>Create plant</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12}>
@@ -144,6 +155,19 @@ export default function PlantInventory() {
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField fullWidth label="Feedstock" value={form.feedstockType} onChange={(e) => setForm({ ...form, feedstockType: e.target.value })} />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                select
+                fullWidth
+                label="Tenant (optional)"
+                value={form.companyId}
+                onChange={(e) => setForm({ ...form, companyId: e.target.value })}
+                helperText="Leave unassigned to attach later from the tenant page"
+              >
+                <MenuItem value="">Unassigned pool</MenuItem>
+                {tenants.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+              </TextField>
             </Grid>
           </Grid>
         </DialogContent>

@@ -10,7 +10,8 @@ import {
 import { Add, Edit, PowerSettingsNew, Delete, CellTower } from '@mui/icons-material';
 import { sensorAPI, plantAPI, fieldDeviceAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { SENSOR_LABELS, getSensorTypesForPlant } from '../utils/constants';
+import { getSensorTypesForPlant } from '../utils/constants';
+import useSensorCatalog from '../utils/useSensorCatalog';
 import { pageHeaderRow, pageTitleSx, responsiveSelect } from '../utils/responsive';
 import ConnectDevice from './ConnectDevice';
 
@@ -52,6 +53,7 @@ export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelec
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ ...emptyForm, plantId: fixedPlantId || '' });
   const [filterPlant, setFilterPlant] = useState(fixedPlantId || '');
+  const [loadError, setLoadError] = useState('');
 
   const setTab = (next) => {
     const params = new URLSearchParams(searchParams);
@@ -73,14 +75,25 @@ export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelec
         const list = plantsRes.data.data || [];
         setPlants(fixedPlantId ? list.filter((p) => p.plantId === Number(fixedPlantId)) : list);
         if (fixedPlantId) setFilterPlant(Number(fixedPlantId));
-      }).finally(() => setLoading(false));
+        setLoadError('');
+      })
+      .catch(() => setLoadError('Unable to load sensor inventory. The API is reachable if you can open other pages.'))
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadData(); }, [fixedPlantId, filterPlant]);
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 10000);
+    return () => clearInterval(interval);
+  }, [fixedPlantId, filterPlant]);
 
+  const { types, labels } = useSensorCatalog();
   const filtered = filterPlant ? nodes.filter((n) => n.plantId === Number(filterPlant)) : nodes;
   const selectedPlant = plants.find((p) => p.plantId === Number(form.plantId));
-  const sensorTypeOptions = getSensorTypesForPlant(selectedPlant);
+  const installedTypes = [...new Set(filtered.map((n) => n.sensorType).filter(Boolean))];
+  const sensorTypeOptions = installedTypes.length
+    ? [...new Set([...getSensorTypesForPlant(selectedPlant, types), ...installedTypes])]
+    : getSensorTypesForPlant(selectedPlant, types);
 
   const handleSave = async () => {
     const payload = {
@@ -160,6 +173,8 @@ export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelec
         <Tab value="hubs" label="Hubs & channels" />
         <Tab value="pair" label="Pair Sensor Hub" />
       </Tabs>
+
+      {loadError && <Alert severity="warning" sx={{ mb: 2 }}>{loadError}</Alert>}
 
       {tab === 'hubs' && (
         <Card>
@@ -291,7 +306,7 @@ export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelec
                     <TableRow key={n.nodeId}>
                       <TableCell>{n.nodeName}</TableCell>
                       <TableCell>{n.plantName}</TableCell>
-                      <TableCell>{SENSOR_LABELS[n.sensorType] || n.sensorType}</TableCell>
+                      <TableCell>{labels[n.sensorType] || n.sensorType}</TableCell>
                       <TableCell>
                         <Chip
                           size="small"
@@ -379,7 +394,7 @@ export default function Sensors({ fixedPlantId, embedded = false, hidePlantSelec
             </Grid>
             <Grid item xs={12}>
               <TextField fullWidth select label="Measurement" value={form.sensorType} onChange={(e) => setForm({ ...form, sensorType: e.target.value })}>
-                {sensorTypeOptions.map((t) => <MenuItem key={t} value={t}>{SENSOR_LABELS[t] || t}</MenuItem>)}
+                {sensorTypeOptions.map((t) => <MenuItem key={t} value={t}>{labels[t] || t}</MenuItem>)}
               </TextField>
             </Grid>
             <Grid item xs={12}>

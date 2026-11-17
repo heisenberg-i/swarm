@@ -13,7 +13,7 @@ import com.biopower.service.AiHealthService;
 import com.biopower.service.AlertService;
 import com.biopower.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
+import com.biopower.util.DateTimes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -40,12 +40,19 @@ public class DashboardController {
     public ResponseEntity<ApiResponse<List<SensorReadingResponse>>> getAnalytics(
             @PathVariable Long plantId,
             @RequestParam(required = false) SensorType sensorType,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @RequestParam String start,
+            @RequestParam String end,
+            @RequestParam(required = false) Long nodeId,
+            @RequestParam(required = false) String deviceUid,
             @AuthenticationPrincipal UserPrincipal principal) {
+        LocalDateTime startAt = DateTimes.parseUtc(start, "start");
+        LocalDateTime endAt = DateTimes.parseUtc(end, "end");
+        if (endAt.isBefore(startAt)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("end must be after start"));
+        }
         List<SensorReadingResponse> data = sensorType != null
-                ? analyticsService.getHistoricalData(plantId, sensorType, start, end, principal)
-                : analyticsService.getAllSensorData(plantId, start, end, principal);
+                ? analyticsService.getHistoricalData(plantId, sensorType, startAt, endAt, nodeId, deviceUid, principal)
+                : analyticsService.getAllSensorData(plantId, startAt, endAt, nodeId, deviceUid, principal);
         return ResponseEntity.ok(ApiResponse.success(data));
     }
 

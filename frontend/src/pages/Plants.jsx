@@ -10,8 +10,9 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import { plantAPI, sensorAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  PLANT_TYPES, formatPlantType, getHealthColor, SENSOR_LABELS, SENSOR_TYPES, HARDWARE_PRESETS,
+  PLANT_TYPES, formatPlantType, getHealthColor, HARDWARE_PRESETS,
 } from '../utils/constants';
+import useSensorCatalog from '../utils/useSensorCatalog';
 
 const emptyForm = {
   plantName: '', plantType: 'BIOGAS', location: '', capacity: '', feedstockType: '',
@@ -34,6 +35,7 @@ export default function Plants() {
   const [sensorEditId, setSensorEditId] = useState(null);
   const [sensorForm, setSensorForm] = useState(emptySensorForm);
   const [error, setError] = useState('');
+  const { types: SENSOR_TYPES, labels: SENSOR_LABELS } = useSensorCatalog();
 
   const loadPlants = () => {
     plantAPI.getAll()
